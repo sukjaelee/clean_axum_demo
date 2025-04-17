@@ -1,5 +1,7 @@
 # Rust Axum Clean Demo
 
+Rust Axum Clean Demo – A One‑Stop, Production‑Ready API Template
+
 ## ✅ Best Practices for Clean Architecture of Rust API Server Development
 
 This document outlines a comprehensive, production-ready architecture for building scalable, maintainable Rust APIs using Axum and SQLx. It integrates Clean Architecture principles, domain-driven design, repository patterns, Swagger documentation, and robust testing.
