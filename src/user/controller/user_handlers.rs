@@ -1,9 +1,9 @@
-use crate::file::controllers::file_handler::process_profile_picture_upload;
+use crate::file::controller::file_handler::process_profile_picture_upload;
 use crate::shared::app_state::AppState;
 use crate::shared::jwt::Claims;
-use crate::user::controllers::user_dto::UpdateUser;
+use crate::user::controller::user_dto::UpdateUser;
 use crate::user::model::user_model::User;
-use crate::{shared::error::AppError, user::controllers::user_dto::CreateUserMultipart};
+use crate::{shared::error::AppError, user::controller::user_dto::CreateUserMultipart};
 use axum::extract::{Multipart, State};
 use axum::Extension;
 use axum::{response::IntoResponse, Json};

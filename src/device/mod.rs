@@ -1,3 +1,3 @@
-pub mod controllers;
-pub mod db;
+pub mod controller;
 pub mod model;
+pub mod reposiroty;

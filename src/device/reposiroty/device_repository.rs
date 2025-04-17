@@ -1,4 +1,4 @@
-use crate::device::controllers::device_dto::{CreateDevice, UpdateDevice, UpdateManyDevices};
+use crate::device::controller::device_dto::{CreateDevice, UpdateDevice, UpdateManyDevices};
 use crate::device::model::device_model::Device;
 
 use async_trait::async_trait;

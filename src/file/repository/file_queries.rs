@@ -1,4 +1,4 @@
-use crate::file::controllers::file_dto::CreateFile;
+use crate::file::controller::file_dto::CreateFile;
 use crate::file::model::file_model::UploadedFile;
 use async_trait::async_trait;
 use sqlx::{mysql::MySql, Pool};

@@ -1,4 +1,4 @@
-use crate::file::controllers::file_dto::CreateFile;
+use crate::file::controller::file_dto::CreateFile;
 use crate::file::model::file_model::{FileType, UploadedFile};
 use crate::shared::app_state::AppState;
 use crate::shared::config::Config;

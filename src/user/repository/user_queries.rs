@@ -1,5 +1,5 @@
 use crate::user::{
-    controllers::user_dto::{CreateUserMultipart, UpdateUser},
+    controller::user_dto::{CreateUserMultipart, UpdateUser},
     model::user_model::User,
 };
 use async_trait::async_trait;

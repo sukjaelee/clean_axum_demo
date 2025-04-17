@@ -1,7 +1,9 @@
-use crate::auth::db::{user_auth_queries::UserAuthRepo, user_auth_repository::UserAuthRepository};
-use crate::device::db::{device_queries::DeviceRepo, device_repository::DeviceRepository};
-use crate::file::db::{file_queries::FileRepo, file_repository::FileRepository};
-use crate::user::db::{user_queries::UserRepo, user_repository::UserRepository};
+use crate::auth::repository::{
+    user_auth_queries::UserAuthRepo, user_auth_repository::UserAuthRepository,
+};
+use crate::device::reposiroty::{device_queries::DeviceRepo, device_repository::DeviceRepository};
+use crate::file::repository::{file_queries::FileRepo, file_repository::FileRepository};
+use crate::user::repository::{user_queries::UserRepo, user_repository::UserRepository};
 use sqlx::MySqlPool;
 use std::sync::Arc;
 

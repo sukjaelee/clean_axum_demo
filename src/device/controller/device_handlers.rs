@@ -1,4 +1,4 @@
-use crate::device::controllers::device_dto::{CreateDevice, UpdateDevice};
+use crate::device::controller::device_dto::{CreateDevice, UpdateDevice};
 use crate::device::model::device_model::Device;
 use crate::shared::app_state::AppState;
 use crate::shared::error::AppError;

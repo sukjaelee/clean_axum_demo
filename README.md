@@ -33,12 +33,12 @@ Recommended structure:
 ├── src
 │   ├── app.rs
 │   ├── auth
-│   │   ├── controllers    # Handles HTTP routes and handlers
+│   │   ├── controller    # Handles HTTP routes and handlers
 │   │   │   ├── mod.rs
 │   │   │   ├── user_auth_dto.rs
 │   │   │   ├── user_auth_handlers.rs
 │   │   │   └── user_auth_routes.rs
-│   │   ├── db             # Database access layer: queries and repositories
+│   │   ├── repository             # Database access layer: queries and repositories
 │   │   │   ├── mod.rs
 │   │   │   ├── user_auth_queries.rs
 │   │   │   └── user_auth_repository.rs
@@ -47,12 +47,12 @@ Recommended structure:
 │   │       ├── mod.rs
 │   │       └── user_auth_model.rs
 │   ├── device
-│   │   ├── controllers    # Handles HTTP routes and handlers
+│   │   ├── controller    # Handles HTTP routes and handlers
 │   │   │   ├── device_dto.rs
 │   │   │   ├── device_handlers.rs
 │   │   │   ├── device_routes.rs
 │   │   │   └── mod.rs
-│   │   ├── db             # Database access layer: queries and repositories
+│   │   ├── repository             # Database access layer: queries and repositories
 │   │   │   ├── device_queries.rs
 │   │   │   ├── device_repository.rs
 │   │   │   └── mod.rs
@@ -61,12 +61,12 @@ Recommended structure:
 │   │       ├── device_model.rs
 │   │       └── mod.rs
 │   ├── file               # File service module: handles upload, storage, and retrieval
-│   │   ├── controllers    # Handles HTTP routes and handlers
+│   │   ├── controller    # Handles HTTP routes and handlers
 │   │   │   ├── file_dto.rs
 │   │   │   ├── file_handler.rs
 │   │   │   ├── file_routes.rs
 │   │   │   └── mod.rs
-│   │   ├── db             # Database access layer: queries and repositories
+│   │   ├── repository             # Database access layer: queries and repositories
 │   │   │   ├── file_queries.rs
 │   │   │   ├── file_repository.rs
 │   │   │   └── mod.rs
@@ -85,12 +85,12 @@ Recommended structure:
 │   │   ├── mod.rs
 │   │   └── ts_format.rs
 │   └── user
-│       ├── controllers    # Handles HTTP routes and handlers
+│       ├── controller    # Handles HTTP routes and handlers
 │       │   ├── mod.rs
 │       │   ├── user_dto.rs
 │       │   ├── user_handlers.rs
 │       │   └── user_routes.rs
-│       ├── db             # Database access layer: queries and repositories
+│       ├── repository             # Database access layer: queries and repositories
 │       │   ├── mod.rs
 │       │   ├── user_queries.rs
 │       │   └── user_repository.rs
@@ -226,7 +226,7 @@ Example schemas to support the domain modules:
   - Accept DTOs
   - Call domain/application services
   - Return serialized response DTOs
-- Each domain contains its own `controllers/` module with `routes.rs` and `handlers.rs` files.
+- Each domain contains its own `controller/` module with `routes.rs` and `handlers.rs` files.
 - **Multipart File Upload:** Some endpoints, such as `create_user`, accept file uploads via the `Multipart` extractor. This enables asynchronous processing of each form part—whether it's file data or other form fields—ensuring efficient streaming and robust validation. Each file should be verified for content type, sanitized to prevent directory traversal or injection attacks, and stored securely. This approach not only enhances flexibility in handling user input but also bolsters the system’s security posture.
 - **Protected File Serving:** Implement endpoints like `serve_protected_file` to securely serve static files or resources. This handler should verify user permissions through tokens, session validations, or appropriate authorization headers, ensuring that only authenticated users can access the protected files. Additionally, it should enforce file path sanitization to prevent directory traversal attacks and may include caching strategies for performance optimization.
 
@@ -254,7 +254,7 @@ Example schemas to support the domain modules:
 
 After deserialization, call `.validate()` on the DTO instance to enforce these rules and handle any errors gracefully.
 
-- DTOs may live under each domain’s `controllers/` folder or in `shared/` if reused.
+- DTOs may live under each domain’s `controller/` folder or in `shared/` if reused.
 
 ---
 

@@ -3,8 +3,8 @@ use axum::extract::State;
 use axum::{http::StatusCode, response::IntoResponse, Json};
 
 use clean_axum_demo::app::create_router;
-use clean_axum_demo::auth::controllers::user_auth_dto::AuthUser;
-use clean_axum_demo::auth::controllers::user_auth_handlers::{create_user_auth, login_user};
+use clean_axum_demo::auth::controller::user_auth_dto::AuthUser;
+use clean_axum_demo::auth::controller::user_auth_handlers::{create_user_auth, login_user};
 use clean_axum_demo::shared::config::Config;
 use clean_axum_demo::shared::error::AppError;
 

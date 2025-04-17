@@ -1,10 +1,10 @@
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;
 use axum::{http::StatusCode, Json};
-use clean_axum_demo::device::controllers::device_dto::{
+use clean_axum_demo::device::controller::device_dto::{
     CreateDevice, UpdateDevice, UpdateDeviceWithId, UpdateManyDevices,
 };
-use clean_axum_demo::device::controllers::device_handlers::{
+use clean_axum_demo::device::controller::device_handlers::{
     create_device, delete_device, get_device_by_id, get_devices, update_device, update_many_devices,
 };
 use clean_axum_demo::device::model::device_model::{DeviceOS, DeviceStatus};
