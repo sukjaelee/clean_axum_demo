@@ -1,6 +1,6 @@
 # Rust Axum Clean Demo
 
-Rust Axum Clean Demo – A One‑Stop, Production‑Ready API Template
+Rust Axum Clean Demo – Basic API Template
 
 ## ✅ Best Practices for Clean Architecture of Rust API Server Development
 
