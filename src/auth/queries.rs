@@ -1,8 +1,6 @@
-use crate::auth::model::user_auth_model::UserAuth;
+use super::{model::UserAuth, repository::UserAuthRepository};
 use async_trait::async_trait;
 use sqlx::{MySql, Pool, Transaction};
-
-use super::user_auth_repository::UserAuthRepository;
 
 pub struct UserAuthRepo;
 

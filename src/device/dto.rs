@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use utoipa::ToSchema;
 
-use crate::device::model::device_model::{DeviceOS, DeviceStatus};
+use super::model::{DeviceOS, DeviceStatus};
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateDevice {

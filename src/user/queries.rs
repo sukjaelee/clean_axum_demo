@@ -1,11 +1,7 @@
-use crate::user::{
-    controller::user_dto::{CreateUserMultipart, UpdateUser},
-    model::user_model::User,
-};
+use super::dto::{CreateUserMultipart, UpdateUser};
+use super::{model::User, repository::UserRepository};
 use async_trait::async_trait;
 use sqlx::{MySql, Pool, Transaction};
-
-use super::user_repository::UserRepository;
 
 pub struct UserRepo;
 

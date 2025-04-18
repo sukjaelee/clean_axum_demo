@@ -1,23 +1,22 @@
-use crate::file::controller::file_dto::CreateFile;
-use crate::file::model::file_model::{FileType, UploadedFile};
-use crate::shared::app_state::AppState;
-use crate::shared::config::Config;
-use crate::shared::error::AppError;
-
-use axum::body::Body;
-use axum::extract::{Path, State};
-use axum::http::{header, StatusCode};
-use axum::response::IntoResponse;
-use axum::response::Response;
-use axum::Json;
+use super::dto::CreateFile;
+use super::model::{FileType, UploadedFile};
+use crate::shared::{app_state::AppState, config::Config, error::AppError};
+use axum::{
+    body::Body,
+    extract::{Path, State},
+    http::{header, StatusCode},
+    response::{IntoResponse, Response},
+    Json,
+};
 use regex::Regex;
 use serde_json::json;
 use sqlx::{MySql, Transaction};
 use std::path::Path as FilePath;
 use tokio_util::io::ReaderStream;
-use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
-
-use utoipa::OpenApi;
+use utoipa::{
+    openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
+    OpenApi,
+};
 
 #[derive(OpenApi)]
 #[openapi(

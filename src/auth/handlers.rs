@@ -1,15 +1,17 @@
-use crate::auth::model::user_auth_model::UserAuth;
-use crate::shared::app_state::AppState;
-use crate::shared::error::AppError;
-use crate::shared::hash_util;
-use crate::shared::jwt::{make_jwt_token, AuthBody, AuthPayload};
+use super::model::UserAuth;
+use crate::shared::{
+    app_state::AppState,
+    error::AppError,
+    hash_util,
+    jwt::{make_jwt_token, AuthBody, AuthPayload},
+};
 use axum::extract::State;
 use axum::{response::IntoResponse, Json};
 use serde_json::json;
 
 use utoipa::OpenApi;
 
-use super::user_auth_dto::AuthUser;
+use super::dto::AuthUser;
 
 #[derive(OpenApi)]
 #[openapi(

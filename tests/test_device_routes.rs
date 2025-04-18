@@ -1,18 +1,21 @@
-use axum::extract::{Path, State};
-use axum::response::IntoResponse;
-use axum::Extension;
-use axum::{http::StatusCode, Json};
-use clean_axum_demo::device::controller::device_dto::{
-    CreateDevice, UpdateDevice, UpdateDeviceWithId, UpdateManyDevices,
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    response::IntoResponse,
+    Extension, Json,
 };
-use clean_axum_demo::device::controller::device_handlers::{
-    create_device, delete_device, get_device_by_id, get_devices, update_device, update_many_devices,
+use clean_axum_demo::{
+    device::{
+        dto::{CreateDevice, UpdateDevice, UpdateDeviceWithId, UpdateManyDevices},
+        handlers::{
+            create_device, delete_device, get_device_by_id, get_devices, update_device,
+            update_many_devices,
+        },
+        model::{DeviceOS, DeviceStatus},
+    },
+    shared::{error::AppError, jwt::Claims},
 };
-use clean_axum_demo::device::model::device_model::{DeviceOS, DeviceStatus};
-use clean_axum_demo::shared::error::AppError;
-
 mod test_helpers;
-use clean_axum_demo::shared::jwt::Claims;
 use test_helpers::setup_test_db_state;
 
 #[tokio::test]

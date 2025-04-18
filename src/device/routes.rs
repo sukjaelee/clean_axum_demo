@@ -1,7 +1,5 @@
+use super::handlers::*;
 use crate::shared::app_state::AppState;
-
-use super::device_handlers::*;
-
 use axum::{
     routing::{delete, get, post, put},
     Router,

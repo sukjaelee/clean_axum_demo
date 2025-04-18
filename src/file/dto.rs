@@ -1,4 +1,4 @@
-use crate::file::model::file_model::FileType;
+use super::model::FileType;
 use serde::Deserialize;
 use utoipa::ToSchema;
 

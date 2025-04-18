@@ -24,28 +24,29 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use utoipa::OpenApi;
 
 use crate::{
-    auth::controller::user_auth_routes::user_auth_routes,
-    device::controller::device_routes::device_routes,
-    file::controller::{file_handler::FileApiDoc, file_routes::file_routes},
+    auth::routes::user_auth_routes,
+    device::routes::device_routes,
+    file::routes::file_routes,
     shared::{
         app_state::AppState,
         config::Config,
         error::{handle_error, AppError},
         jwt,
     },
-    user::controller::user_routes::user_routes,
+    user::routes::user_routes,
 };
 
-use crate::device::controller::device_handlers::DeviceApiDoc;
-
-use crate::user::controller::user_handlers::UserApiDoc;
+use crate::auth::handlers::UserAuthApiDoc;
+use crate::device::handlers::DeviceApiDoc;
+use crate::file::handlers::FileApiDoc;
+use crate::user::handlers::UserApiDoc;
 use utoipa_swagger_ui::SwaggerUi;
 
 fn create_swagger_ui() -> SwaggerUi {
     SwaggerUi::new("/docs")
         .url(
             "/api-docs/user_auth/openapi.json",
-            crate::auth::controller::user_auth_handlers::UserAuthApiDoc::openapi(),
+            UserAuthApiDoc::openapi(),
         )
         .url("/api-docs/user/openapi.json", UserApiDoc::openapi())
         .url("/api-docs/device/openapi.json", DeviceApiDoc::openapi())

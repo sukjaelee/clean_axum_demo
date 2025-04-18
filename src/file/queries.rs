@@ -1,11 +1,6 @@
-use crate::file::controller::file_dto::CreateFile;
-use crate::file::model::file_model::UploadedFile;
+use super::{dto::CreateFile, model::UploadedFile, repository::FileRepository};
 use async_trait::async_trait;
-use sqlx::{mysql::MySql, Pool};
-
-use sqlx::Transaction;
-
-use super::file_repository::FileRepository;
+use sqlx::{mysql::MySql, Pool, Transaction};
 
 pub struct FileRepo;
 

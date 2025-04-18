@@ -1,4 +1,4 @@
-use crate::auth::model::user_auth_model::UserAuth;
+use super::model::UserAuth;
 
 use async_trait::async_trait;
 use sqlx::{MySql, Pool, Transaction};

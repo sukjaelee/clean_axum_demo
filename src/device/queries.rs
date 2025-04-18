@@ -1,6 +1,6 @@
-use crate::device::{
-        controller::device_dto::{CreateDevice, UpdateDevice, UpdateManyDevices},
-        model::device_model::Device,
+use super::{
+        dto::{CreateDevice, UpdateDevice, UpdateManyDevices},
+        model::Device,
     };
 use async_trait::async_trait;
 use sqlx::{mysql::MySql, Pool};
@@ -9,7 +9,7 @@ use sqlx::QueryBuilder;
 use sqlx::Transaction;
 use uuid::Uuid;
 
-use super::device_repository::DeviceRepository;
+use super::repository::DeviceRepository;
 
 pub struct DeviceRepo;
 

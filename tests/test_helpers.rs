@@ -8,7 +8,7 @@ use axum::{
 use http_body_util::BodyExt;
 
 use clean_axum_demo::{
-    auth::controller::user_auth_handlers::login_user,
+    auth::handlers::login_user,
     shared::{
         app_state::AppState,
         config::Config,

@@ -76,55 +76,38 @@ Recommended structure:
 │   │       └── mario_PNG52.png
 │   └── public
 │       └── images.jpeg
+├── Cargo.lock
 ├── Cargo.toml
-├── db-seed            # Database seeding scripts for initial schema and seed data
+├── db-seed
 │   ├── seed.sql
 │   └── tables.sql
 ├── README.md
 ├── src
 │   ├── app.rs
 │   ├── auth
-│   │   ├── controller    # Handles HTTP routes and handlers
-│   │   │   ├── mod.rs
-│   │   │   ├── user_auth_dto.rs
-│   │   │   ├── user_auth_handlers.rs
-│   │   │   └── user_auth_routes.rs
-│   │   ├── repository             # Database access layer: queries and repositories
-│   │   │   ├── mod.rs
-│   │   │   ├── user_auth_queries.rs
-│   │   │   └── user_auth_repository.rs
+│   │   ├── dto.rs          // Request/response DTOs
+│   │   ├── handlers.rs     // Axum HTTP handlers
 │   │   ├── mod.rs
-│   │   └── model          # Domain models and business logic
-│   │       ├── mod.rs
-│   │       └── user_auth_model.rs
+│   │   ├── model.rs        // Domain models & business logic
+│   │   ├── queries.rs      // SQLx queries
+│   │   ├── repository.rs    // Repository trait implementations
+│   │   └── routes.rs       // Axum route definitions
 │   ├── device
-│   │   ├── controller    # Handles HTTP routes and handlers
-│   │   │   ├── device_dto.rs
-│   │   │   ├── device_handlers.rs
-│   │   │   ├── device_routes.rs
-│   │   │   └── mod.rs
-│   │   ├── repository             # Database access layer: queries and repositories
-│   │   │   ├── device_queries.rs
-│   │   │   ├── device_repository.rs
-│   │   │   └── mod.rs
+│   │   ├── dto.rs          // Request/response DTOs
+│   │   ├── handlers.rs     // Axum HTTP handlers
 │   │   ├── mod.rs
-│   │   └── model          # Domain models and business logic
-│   │       ├── device_model.rs
-│   │       └── mod.rs
-│   ├── file               # File service module: handles upload, storage, and retrieval
-│   │   ├── controller    # Handles HTTP routes and handlers
-│   │   │   ├── file_dto.rs
-│   │   │   ├── file_handler.rs
-│   │   │   ├── file_routes.rs
-│   │   │   └── mod.rs
-│   │   ├── repository             # Database access layer: queries and repositories
-│   │   │   ├── file_queries.rs
-│   │   │   ├── file_repository.rs
-│   │   │   └── mod.rs
+│   │   ├── model.rs        // Domain models & business logic
+│   │   ├── queries.rs      // SQLx queries
+│   │   ├── repository.rs    // Repository trait implementations
+│   │   └── routes.rs       // Axum route definitions
+│   ├── file
+│   │   ├── dto.rs          // Request/response DTOs
+│   │   ├── handlers.rs     // Axum HTTP handlers
 │   │   ├── mod.rs
-│   │   └── model          # Domain models and business logic
-│   │       ├── file_model.rs
-│   │       └── mod.rs
+│   │   ├── model.rs        // Domain models & business logic
+│   │   ├── queries.rs      // SQLx queries
+│   │   ├── repository.rs    // Repository trait implementations
+│   │   └── routes.rs       // Axum route definitions
 │   ├── lib.rs
 │   ├── main.rs
 │   ├── shared
@@ -136,20 +119,14 @@ Recommended structure:
 │   │   ├── mod.rs
 │   │   └── ts_format.rs
 │   └── user
-│       ├── controller    # Handles HTTP routes and handlers
-│       │   ├── mod.rs
-│       │   ├── user_dto.rs
-│       │   ├── user_handlers.rs
-│       │   └── user_routes.rs
-│       ├── repository             # Database access layer: queries and repositories
-│       │   ├── mod.rs
-│       │   ├── user_queries.rs
-│       │   └── user_repository.rs
+│       ├── dto.rs          // Request/response DTOs
+│       ├── handlers.rs     // Axum HTTP handlers
 │       ├── mod.rs
-│       └── model          # Domain models and business logic
-│           ├── mod.rs
-│           └── user_model.rs
-└── tests                # Integration and unit tests for all API routes and helpers
+│       ├── model.rs        // Domain models & business logic
+│       ├── queries.rs      // SQLx queries
+│       ├── repository.rs    // Repository trait implementations
+│       └── routes.rs       // Axum route definitions
+└── tests
     ├── asset
     │   ├── cat.png
     │   └── mario_PNG52.png
@@ -343,3 +320,10 @@ DATABASE_URL=mysql://user:pass@localhost/test_db
 - Use `thiserror` for ergonomic declarations and matching.
 - Map these errors to appropriate HTTP status codes using `impl IntoResponse`.
 - Ensure consistent JSON error structure across all endpoints for better DX and frontend compatibility.
+
+---
+
+### 📝 TODO
+
+1. Enhance tests with the [`axum-test`](https://crates.io/crates/axum-test) crate for more expressive and robust integration testing.
+2. Add a `docker-compose.yml` to simplify local setup with MariaDB and seeded data.

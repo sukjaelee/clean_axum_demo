@@ -1,17 +1,16 @@
-use crate::device::controller::device_dto::{CreateDevice, UpdateDevice};
-use crate::device::model::device_model::Device;
-use crate::shared::app_state::AppState;
-use crate::shared::error::AppError;
-use crate::shared::jwt::Claims;
-use axum::extract::{Path, State};
-use axum::Extension;
-use axum::{response::IntoResponse, Json};
+use super::dto::*;
+use super::model::*;
+use crate::shared::{app_state::AppState, error::AppError, jwt::Claims};
+use axum::{
+    extract::{Path, State},
+    response::IntoResponse,
+    Extension, Json,
+};
 use serde_json::json;
-
-use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
-use utoipa::OpenApi;
-
-use super::device_dto::UpdateManyDevices;
+use utoipa::{
+    openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
+    OpenApi,
+};
 
 #[derive(OpenApi)]
 #[openapi(

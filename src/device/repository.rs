@@ -1,9 +1,8 @@
-use crate::device::controller::device_dto::{CreateDevice, UpdateDevice, UpdateManyDevices};
-use crate::device::model::device_model::Device;
+use super::dto::*;
+use super::model::Device;
 
 use async_trait::async_trait;
-use sqlx::Transaction;
-use sqlx::{MySql, Pool};
+use sqlx::{MySql, Pool, Transaction};
 
 #[async_trait]
 pub trait DeviceRepository: Send + Sync {

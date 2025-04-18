@@ -1,16 +1,21 @@
-use crate::file::controller::file_handler::process_profile_picture_upload;
-use crate::shared::app_state::AppState;
-use crate::shared::jwt::Claims;
-use crate::user::controller::user_dto::UpdateUser;
-use crate::user::model::user_model::User;
-use crate::{shared::error::AppError, user::controller::user_dto::CreateUserMultipart};
-use axum::extract::{Multipart, State};
-use axum::Extension;
-use axum::{response::IntoResponse, Json};
+use super::{
+    dto::{CreateUserMultipart, UpdateUser},
+    model::User,
+};
+use crate::{
+    file::handlers::process_profile_picture_upload,
+    shared::{app_state::AppState, error::AppError, jwt::Claims},
+};
+use axum::{
+    extract::{Multipart, State},
+    response::IntoResponse,
+    Extension, Json,
+};
 use serde_json::json;
-
-use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
-use utoipa::OpenApi;
+use utoipa::{
+    openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
+    OpenApi,
+};
 use validator::Validate;
 
 #[derive(OpenApi)]

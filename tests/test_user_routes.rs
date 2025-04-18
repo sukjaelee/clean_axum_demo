@@ -4,14 +4,14 @@ use axum::http::Request;
 use axum::Extension;
 use axum::{body::Body, http::StatusCode, response::IntoResponse, Json};
 
-use clean_axum_demo::app::create_router;
-use clean_axum_demo::file::controller::file_handler::delete_file;
-use clean_axum_demo::shared::config::Config;
-use clean_axum_demo::shared::error::AppError;
-use clean_axum_demo::shared::jwt::Claims;
-use clean_axum_demo::user::controller::user_dto::{CreateUserMultipart, UpdateUser};
-use clean_axum_demo::user::controller::user_handlers::{
-    delete_user, get_user_by_id, get_users, update_user,
+use clean_axum_demo::{
+    app::create_router,
+    file::handlers::delete_file,
+    shared::{config::Config, error::AppError, jwt::Claims},
+    user::{
+        dto::{CreateUserMultipart, UpdateUser},
+        handlers::{delete_user, get_user_by_id, get_users, update_user},
+    },
 };
 
 mod test_helpers;

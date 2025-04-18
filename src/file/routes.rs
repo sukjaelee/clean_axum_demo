@@ -1,6 +1,5 @@
+use super::handlers::{delete_file, serve_protected_file};
 use crate::shared::app_state::AppState;
-
-use crate::file::controller::file_handler::{delete_file, serve_protected_file};
 use axum::{
     routing::{delete, get},
     Router,
