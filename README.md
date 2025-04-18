@@ -8,17 +8,21 @@ This document outlines a Rust API Server Sample Demo using Axum and SQLx. It int
 
 1. Create database tables:
    - Navigate to the `db-seed` directory and execute the SQL scripts in order:
+
      ```bash
      cd db-seed
      mysql -u <user> -p <database> < tables.sql
      mysql -u <user> -p <database> < seed.sql
      ```
+
 2. Prepare SQLx for offline compilation:
    - Enable building queries offline by generating metadata with:
+
      ```bash
      cargo sqlx prepare
      ```
-   - For more details, see: https://github.com/launchbadge/sqlx/tree/main/sqlx-cli
+
+   - For more details, see: <https://github.com/launchbadge/sqlx/tree/main/sqlx-cli>
 3. Start the application:
 
    ```bash
@@ -28,13 +32,16 @@ This document outlines a Rust API Server Sample Demo using Axum and SQLx. It int
 4. Example Login & Protected‑API Usage:
 
    - Send a login request:
+
      ```bash
      curl -X POST http://localhost:8080/auth/login \
        -H "Content-Type: application/json" \
        -d '{"client_id":"apitest01","client_secret":"test_password"}'
      ```
+
    - Copy the `token` value from the JSON response.
    - Call a protected endpoint:
+
      ```bash
      curl http://localhost:8080/users \
        -H "Authorization: Bearer <token>"
@@ -72,7 +79,7 @@ Organize your project by **domain-first modularity**. Each domain (e.g., `user`,
 
 Recommended structure:
 
-```
+```plain
 ├── assets                          # Static assets used by the application
 │   ├── private                     # Private user files (e.g., uploads)
 │   │   └── profile_picture
@@ -160,7 +167,7 @@ Test configuration is managed via a `.env` file at the root. This includes:
 
 Example:
 
-```
+```shell
 DATABASE_URL=mysql://user:pass@localhost/test_db
 ```
 
@@ -177,7 +184,7 @@ DATABASE_URL=mysql://user:pass@localhost/test_db
 ### 🔄 Use Case Isolation & Dependency Inversion
 
 - Each operation is defined in a service or use case.
-- Use traits for repositories, injected into handlers via Arc<T>.
+- Use traits for repositories, injected into handlers via `Arc<T>`.
 - Infrastructure implements these traits, enabling mocking and isolation.
 
 ---
