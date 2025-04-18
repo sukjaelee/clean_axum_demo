@@ -2,9 +2,60 @@
 
 Rust Axum Clean Demo – Basic API Template
 
-## ✅ Best Practices for Clean Architecture of Rust API Server Development
+This document outlines a Rust API Server Sample Demo using Axum and SQLx. It integrates Clean Architecture principles, domain-driven design, repository patterns, Swagger documentation, and robust testing.
 
-This document outlines a comprehensive, production-ready architecture for building scalable, maintainable Rust APIs using Axum and SQLx. It integrates Clean Architecture principles, domain-driven design, repository patterns, Swagger documentation, and robust testing.
+## 🚀 How to Run
+
+1. Create database tables:
+   - Navigate to the `db-seed` directory and execute the SQL scripts in order:
+     ```bash
+     cd db-seed
+     mysql -u <user> -p <database> < tables.sql
+     mysql -u <user> -p <database> < seed.sql
+     ```
+2. Prepare SQLx for offline compilation:
+   - Enable building queries offline by generating metadata with:
+     ```bash
+     cargo sqlx prepare
+     ```
+   - For more details, see: https://github.com/launchbadge/sqlx/tree/main/sqlx-cli
+3. Start the application:
+
+   ```bash
+   cargo run
+   ```
+
+4. Example Login & Protected‑API Usage:
+
+   - Send a login request:
+     ```bash
+     curl -X POST http://localhost:8080/auth/login \
+       -H "Content-Type: application/json" \
+       -d '{"client_id":"apitest01","client_secret":"test_password"}'
+     ```
+   - Copy the `token` value from the JSON response.
+   - Call a protected endpoint:
+     ```bash
+     curl http://localhost:8080/users \
+       -H "Authorization: Bearer <token>"
+     ```
+
+5. View the API documentation:
+   Open your browser and go to [http://localhost:8080/docs](http://localhost:8080/docs).
+6. Access protected endpoints:
+
+   - Authenticate by sending a `POST` request to `/auth/login` (e.g., via Swagger UI or curl).
+
+     ```json
+     {
+       "client_id": "apitest01",
+       "client_secret": "test_password"
+     }
+     ```
+
+     - Copy the returned JWT token.
+
+   - In Swagger UI, click the 🔒 Authorize button and paste `<jwt>` to authorize requests.
 
 ### 📦 Project Structure: Layered + Modular
 
@@ -130,7 +181,7 @@ Recommended structure:
 
 - Database access via `sqlx` with strongly typed queries.
 - UUIDs stored as `CHAR(36)`, fixed length for performance.
-- Database queries are implemented under each domain's `db/` module (e.g., `user/db/user_queries.rs`).
+- Database queries are implemented under each domain's `repository/` module (e.g., `user/repository/user_queries.rs`).
 
 ---
 
@@ -234,7 +285,7 @@ Example schemas to support the domain modules:
 
 ### 🧾 DTOs & Mapping
 
-- Request and response models live in `dto.rs`.
+- Request and response models live in each domain's `controller/` module (e.g., `user/controller/user_dto.rs`).
 - Explicit conversion between domain models and DTOs.
 - Validation (e.g., enums, formats) handled at DTO level or via `serde`.
 - For enhanced input validation, consider utilizing the [`validator`](https://docs.rs/validator) crate. This crate leverages the `#[derive(Validate)]` procedural macro to annotate DTO fields with constraints (e.g., ensuring strings are not empty, emails are valid, etc.). For example:
@@ -292,56 +343,3 @@ DATABASE_URL=mysql://user:pass@localhost/test_db
 - Use `thiserror` for ergonomic declarations and matching.
 - Map these errors to appropriate HTTP status codes using `impl IntoResponse`.
 - Ensure consistent JSON error structure across all endpoints for better DX and frontend compatibility.
-
-## 🚀 How to Run
-
-1. Create database tables:
-   - Navigate to the `db-seed` directory and execute the SQL scripts in order:
-     ```bash
-     cd db-seed
-     mysql -u <user> -p <database> < tables.sql
-     mysql -u <user> -p <database> < seed.sql
-     ```
-2. Prepare SQLx for offline compilation:
-   - Enable building queries offline by generating metadata with:
-     ```bash
-     cargo sqlx prepare
-     ```
-   - For more details, see: https://github.com/launchbadge/sqlx/tree/main/sqlx-cli
-3. Start the application:
-
-   ```bash
-   cargo run
-   ```
-
-4. Example Login & Protected‑API Usage:
-
-   - Send a login request:
-     ```bash
-     curl -X POST http://localhost:8080/auth/login \
-       -H "Content-Type: application/json" \
-       -d '{"client_id":"apitest01","client_secret":"test_password"}'
-     ```
-   - Copy the `token` value from the JSON response.
-   - Call a protected endpoint:
-     ```bash
-     curl http://localhost:8080/users \
-       -H "Authorization: Bearer <token>"
-     ```
-
-5. View the API documentation:
-   Open your browser and go to [http://localhost:8080/docs](http://localhost:8080/docs).
-6. Access protected endpoints:
-
-   - Authenticate by sending a `POST` request to `/auth/login` (e.g., via Swagger UI or curl).
-
-     ```json
-     {
-       "client_id": "apitest01",
-       "client_secret": "test_password"
-     }
-     ```
-
-     - Copy the returned JWT token.
-
-   - In Swagger UI, click the 🔒 Authorize button and paste `<jwt>` to authorize requests.
