@@ -32,5 +32,4 @@ pub struct UpdateDeviceWithId {
     pub name: String,
     pub device_os: DeviceOS,
     pub status: DeviceStatus,
-    pub modified_by: String,
 }

@@ -122,6 +122,7 @@ impl DeviceRepository for DeviceRepo {
         &self,
         tx: &mut Transaction<'_, MySql>,
         user_id: String,
+        modified_by: String,
         update_devices: UpdateManyDevices,
     ) -> Result<(), sqlx::Error> {
         let mut builder = QueryBuilder::<MySql>::new(
@@ -142,9 +143,9 @@ impl DeviceRepository for DeviceRepo {
             .push_bind(device.status.to_string())
             .push_bind(device.device_os.to_string())
             .push_bind(now)
-            .push_bind(&device.modified_by)
+            .push_bind(&modified_by)
             .push_bind(now)
-            .push_bind(&device.modified_by)
+            .push_bind(&modified_by)
             .push_bind(now);
         });
 

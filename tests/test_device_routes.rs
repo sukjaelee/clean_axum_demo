@@ -1,5 +1,6 @@
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;
+use axum::Extension;
 use axum::{http::StatusCode, Json};
 use clean_axum_demo::device::controller::device_dto::{
     CreateDevice, UpdateDevice, UpdateDeviceWithId, UpdateManyDevices,
@@ -11,6 +12,7 @@ use clean_axum_demo::device::model::device_model::{DeviceOS, DeviceStatus};
 use clean_axum_demo::shared::error::AppError;
 
 mod test_helpers;
+use clean_axum_demo::shared::jwt::Claims;
 use test_helpers::setup_test_db_state;
 
 #[tokio::test]
@@ -25,7 +27,12 @@ async fn test_create_device() -> Result<(), AppError> {
         modified_by: "00000000-0000-0000-0000-000000000001".to_string(),
     };
 
-    let response = create_device(State(state.unwrap()), Json(payload)).await?;
+    let claims = Claims {
+        sub: "00000000-0000-0000-0000-000000000021".to_string(),
+        ..Default::default()
+    };
+
+    let response = create_device(State(state.unwrap()), Extension(claims), Json(payload)).await?;
     let status = response.into_response().status();
     assert_eq!(status, StatusCode::OK);
 
@@ -74,8 +81,14 @@ async fn test_update_device() -> Result<(), AppError> {
 
     let existent_id = "b0a99b38-15b2-11f0-8457-0242ac110002";
 
+    let claims = Claims {
+        sub: "00000000-0000-0000-0000-000000000021".to_string(),
+        ..Default::default()
+    };
+
     let response = update_device(
         State(state.unwrap()),
+        Extension(claims),
         axum::extract::Path(existent_id.to_string()),
         Json(update_payload),
     )
@@ -135,20 +148,24 @@ async fn test_update_many_devices() -> Result<(), AppError> {
                 name: "Bulk Device 1-1".to_string(),
                 device_os: DeviceOS::IOS,
                 status: DeviceStatus::Blocked,
-                modified_by: user_id.to_string(),
             },
             UpdateDeviceWithId {
                 id: None,
                 name: "Bulk Device 2-1".to_string(),
                 device_os: DeviceOS::Android,
                 status: DeviceStatus::Pending,
-                modified_by: user_id.to_string(),
             },
         ],
     };
 
+    let claims = Claims {
+        sub: "00000000-0000-0000-0000-000000000021".to_string(),
+        ..Default::default()
+    };
+
     let response = update_many_devices(
         State(state.unwrap()),
+        Extension(claims),
         Path(user_id.to_string()),
         Json(payload),
     )

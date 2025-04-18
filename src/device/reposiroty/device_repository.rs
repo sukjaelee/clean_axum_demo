@@ -28,6 +28,7 @@ pub trait DeviceRepository: Send + Sync {
         &self,
         tx: &mut Transaction<'_, MySql>,
         user_id: String,
+        modified_by: String,
         update_devices: UpdateManyDevices,
     ) -> Result<(), sqlx::Error>;
     async fn delete(

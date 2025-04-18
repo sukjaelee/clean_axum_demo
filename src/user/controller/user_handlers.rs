@@ -77,12 +77,7 @@ pub async fn get_user_by_id(
     responses((status = 200, description = "List all users", body = [User])),
     tag = "Users"
 )]
-pub async fn get_users(
-    State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
-) -> Result<impl IntoResponse, AppError> {
-    tracing::info!("----Hello, {}!", claims.sub);
-
+pub async fn get_users(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
     match state.user_repo.find_all(state.pool).await {
         Ok(users) => Ok(Json(json!({ "users": users })).into_response()),
         Err(err) => {
@@ -105,12 +100,12 @@ pub async fn get_users(
 )]
 pub async fn create_user(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     mut multipart: Multipart,
 ) -> Result<impl IntoResponse, AppError> {
     // Variables to hold multipart fields.
     let mut username: Option<String> = None;
     let mut email: Option<String> = None;
-    let mut modified_by: Option<String> = None;
     let mut profile_picture_data: Option<Vec<u8>> = None;
     let mut profile_picture_filename: Option<String> = None;
     let mut profile_picture_content_type: Option<String> = None;
@@ -130,9 +125,6 @@ pub async fn create_user(
             Some("email") => {
                 email = Some(field.text().await.map_err(map_err_internal)?);
             }
-            Some("modified_by") => {
-                modified_by = Some(field.text().await.map_err(map_err_internal)?);
-            }
             Some("profile_picture") => {
                 // Capture metadata before consuming the field
                 profile_picture_filename = field.file_name().map(|s| s.to_string());
@@ -149,7 +141,7 @@ pub async fn create_user(
     // Validate required fields.
     let username = username.ok_or(AppError::ValidationError("Missing username".into()))?;
     let email = email.ok_or(AppError::ValidationError("Missing email".into()))?;
-    let modified_by = modified_by.ok_or(AppError::ValidationError("Missing modified_by".into()))?;
+    let modified_by = claims.sub.clone().to_string();
 
     let mut tx = state.pool.begin().await?;
 
@@ -215,6 +207,7 @@ pub async fn create_user(
 )]
 pub async fn update_user(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     axum::extract::Path(id): axum::extract::Path<String>,
     Json(payload): Json<UpdateUser>,
 ) -> Result<impl IntoResponse, AppError> {
@@ -224,6 +217,10 @@ pub async fn update_user(
         tracing::error!("Validation error: {err}");
         AppError::ValidationError(format!("Invalid input: {}", err))
     })?;
+
+    // Set the modified_by field to the current user's ID.
+    let mut payload = payload;
+    payload.modified_by = claims.sub.clone().to_string();
 
     match state
         .user_repo

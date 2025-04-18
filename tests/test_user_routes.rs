@@ -148,14 +148,7 @@ async fn test_create_user_with_file() -> Result<(), AppError> {
 async fn test_get_users() -> Result<(), AppError> {
     let state = setup_test_db_state().await;
 
-    let claims = Claims {
-        sub: "test001".to_string(),
-        ..Default::default()
-    };
-
-    let response = get_users(State(state.unwrap()), Extension(claims))
-        .await
-        .into_response();
+    let response = get_users(State(state.unwrap())).await.into_response();
 
     let (parts, body) = response.into_parts();
     print_response(body).await;
@@ -193,8 +186,14 @@ async fn test_update_user() -> Result<(), AppError> {
 
     let existent_id = "00000000-0000-0000-0000-000000000001";
 
+    let claims = Claims {
+        sub: "00000000-0000-0000-0000-000000000021".to_string(),
+        ..Default::default()
+    };
+
     let response = update_user(
         State(state.unwrap()),
+        Extension(claims),
         axum::extract::Path(existent_id.to_string()),
         Json(update_payload),
     )

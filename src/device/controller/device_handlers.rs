@@ -2,7 +2,9 @@ use crate::device::controller::device_dto::{CreateDevice, UpdateDevice};
 use crate::device::model::device_model::Device;
 use crate::shared::app_state::AppState;
 use crate::shared::error::AppError;
+use crate::shared::jwt::Claims;
 use axum::extract::{Path, State};
+use axum::Extension;
 use axum::{response::IntoResponse, Json};
 use serde_json::json;
 
@@ -95,9 +97,14 @@ pub async fn get_devices(State(state): State<AppState>) -> Result<impl IntoRespo
 )]
 pub async fn create_device(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Json(payload): Json<CreateDevice>,
 ) -> Result<impl IntoResponse, AppError> {
     let mut tx = state.pool.begin().await?;
+
+    // Set the modified_by field to the current user's ID.
+    let mut payload = payload;
+    payload.modified_by = claims.sub.clone().to_string();
 
     match state.device_repo.create(&mut tx, payload).await {
         Ok(device) => {
@@ -121,10 +128,15 @@ pub async fn create_device(
 )]
 pub async fn update_device(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     axum::extract::Path(id): axum::extract::Path<String>,
     Json(payload): Json<UpdateDevice>,
 ) -> Result<impl IntoResponse, AppError> {
     let mut tx = state.pool.begin().await?;
+
+    // Set the modified_by field to the current user's ID.
+    let mut payload = payload;
+    payload.modified_by = claims.sub.clone().to_string();
 
     match state.device_repo.update(&mut tx, id, payload).await {
         Ok(Some(device)) => {
@@ -181,14 +193,17 @@ pub async fn delete_device(
 )]
 pub async fn update_many_devices(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(user_id): Path<String>,
     Json(payload): Json<UpdateManyDevices>,
 ) -> Result<impl IntoResponse, AppError> {
     let mut tx = state.pool.begin().await?;
 
+    let modified_by = claims.sub.clone().to_string();
+
     match state
         .device_repo
-        .update_many(&mut tx, user_id, payload)
+        .update_many(&mut tx, user_id, modified_by, payload)
         .await
     {
         Ok(()) => {
