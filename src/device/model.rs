@@ -94,12 +94,12 @@ pub struct Device {
     pub name: String,
     pub device_os: DeviceOS,
     pub status: DeviceStatus,
-    #[serde(with = "crate::shared::ts_format")]
-    pub registered_at: OffsetDateTime,
+    #[serde(with = "crate::shared::ts_format::option")]
+    pub registered_at: Option<OffsetDateTime>,
     pub created_by: Option<String>,
-    #[serde(with = "crate::shared::ts_format")]
-    pub created_at: OffsetDateTime,
+    #[serde(with = "crate::shared::ts_format::option")]
+    pub created_at: Option<OffsetDateTime>,
     pub modified_by: Option<String>,
-    #[serde(with = "crate::shared::ts_format")]
-    pub modified_at: OffsetDateTime,
+    #[serde(with = "crate::shared::ts_format::option")]
+    pub modified_at: Option<OffsetDateTime>,
 }
