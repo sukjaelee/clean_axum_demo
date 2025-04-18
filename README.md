@@ -59,13 +59,22 @@ This document outlines a Rust API Server Sample Demo using Axum and SQLx. It int
 
 ### 📦 Project Structure: Layered + Modular
 
+Each domain module (e.g., `auth`, `device`, `file`, `user`) follows a consistent structure:
+
+- `dto.rs`: Defines the DTO (Data Transfer Object) layer for the domain.
+- `handlers.rs`: Defines the HTTP handler layer for the domain.
+- `model.rs`: Defines the domain model and business logic layer.
+- `queries.rs`: Defines raw SQLx query implementations.
+- `repository.rs`: Implements the repository pattern for database operations.
+- `routes.rs`: Defines HTTP route configuration for the domain.
+
 Organize your project by **domain-first modularity**. Each domain (e.g., `user`, `device`) encapsulates its own types, database queries, routes, and handlers. This ensures high cohesion, better testability, and easy maintenance. Ensure that model structs fully reflect all table columns to prevent runtime issues.
 
 Recommended structure:
 
 ```
-├── assets
-│   ├── private
+├── assets                          # Static assets used by the application
+│   ├── private                     # Private user files (e.g., uploads)
 │   │   └── profile_picture
 │   │       ├── cat.png
 │   │       ├── cat(1).png
@@ -74,7 +83,7 @@ Recommended structure:
 │   │       ├── cat(4).png
 │   │       ├── images.jpeg
 │   │       └── mario_PNG52.png
-│   └── public
+│   └── public                      # Publicly accessible static files
 │       └── images.jpeg
 ├── Cargo.lock
 ├── Cargo.toml
@@ -83,57 +92,76 @@ Recommended structure:
 │   └── tables.sql
 ├── README.md
 ├── src
-│   ├── app.rs
+│   ├── app.rs               # Axum router setup & middleware configuration
 │   ├── auth
-│   │   ├── dto.rs          // Request/response DTOs
-│   │   ├── handlers.rs     // Axum HTTP handlers
+│   │   ├── dto.rs
+│   │   ├── handlers.rs
 │   │   ├── mod.rs
-│   │   ├── model.rs        // Domain models & business logic
-│   │   ├── queries.rs      // SQLx queries
-│   │   ├── repository.rs    // Repository trait implementations
-│   │   └── routes.rs       // Axum route definitions
+│   │   ├── model.rs
+│   │   ├── queries.rs
+│   │   ├── repository.rs
+│   │   └── routes.rs
 │   ├── device
-│   │   ├── dto.rs          // Request/response DTOs
-│   │   ├── handlers.rs     // Axum HTTP handlers
+│   │   ├── dto.rs
+│   │   ├── handlers.rs
 │   │   ├── mod.rs
-│   │   ├── model.rs        // Domain models & business logic
-│   │   ├── queries.rs      // SQLx queries
-│   │   ├── repository.rs    // Repository trait implementations
-│   │   └── routes.rs       // Axum route definitions
+│   │   ├── model.rs
+│   │   ├── queries.rs
+│   │   ├── repository.rs
+│   │   └── routes.rs
 │   ├── file
-│   │   ├── dto.rs          // Request/response DTOs
-│   │   ├── handlers.rs     // Axum HTTP handlers
+│   │   ├── dto.rs
+│   │   ├── handlers.rs
 │   │   ├── mod.rs
-│   │   ├── model.rs        // Domain models & business logic
-│   │   ├── queries.rs      // SQLx queries
-│   │   ├── repository.rs    // Repository trait implementations
-│   │   └── routes.rs       // Axum route definitions
+│   │   ├── model.rs
+│   │   ├── queries.rs
+│   │   ├── repository.rs
+│   │   └── routes.rs
 │   ├── lib.rs
 │   ├── main.rs
 │   ├── shared
-│   │   ├── app_state.rs
-│   │   ├── config.rs
-│   │   ├── error.rs
-│   │   ├── hash_util.rs
-│   │   ├── jwt.rs
+│   │   ├── app_state.rs     # Shared application state (DB pool, repositories, config)
+│   │   ├── config.rs        # Application-level configuration loader
+│   │   ├── error.rs         # Centralized error definitions and mappings
+│   │   ├── hash_util.rs     # Utility functions for password hashing (e.g., bcrypt)
+│   │   ├── jwt.rs           # JWT encoding/decoding helpers
 │   │   ├── mod.rs
-│   │   └── ts_format.rs
+│   │   └── ts_format.rs     # Timestamp serialization helpers for consistent API output
 │   └── user
-│       ├── dto.rs          // Request/response DTOs
-│       ├── handlers.rs     // Axum HTTP handlers
+│       ├── dto.rs
+│       ├── handlers.rs
 │       ├── mod.rs
-│       ├── model.rs        // Domain models & business logic
-│       ├── queries.rs      // SQLx queries
-│       ├── repository.rs    // Repository trait implementations
-│       └── routes.rs       // Axum route definitions
-└── tests
-    ├── asset
+│       ├── model.rs
+│       ├── queries.rs
+│       ├── repository.rs
+│       └── routes.rs
+└── tests                         # Integration tests using real endpoints and data
+    ├── asset                    # Static files used in test scenarios (e.g., file uploads)
     │   ├── cat.png
     │   └── mario_PNG52.png
-    ├── test_device_routes.rs
-    ├── test_helpers.rs
-    ├── test_user_auth_routes.rs
-    └── test_user_routes.rs
+    ├── test_device_routes.rs    # Device route integration tests
+    ├── test_helpers.rs          # Shared test setup utilities
+    ├── test_user_auth_routes.rs # Auth route integration tests
+    └── test_user_routes.rs      # User route integration tests
+```
+
+---
+
+### 🧪 Environment Configuration
+
+Test configuration is managed via a `.env` file at the root. This includes:
+
+- `DATABASE_URL`: Connection string for the MariaDB test database.
+- `SERVICE_PORT`, `SERVICE_HOST`: Host and port used for the Axum server.
+- `JWT_SECRET_KEY`: Secret key used to sign and verify JWT tokens.
+- `ASSETS_*`: Configuration for asset storage, URL mapping, and allowed extensions.
+- `ASSET_MAX_SIZE`: Upload size limit (in bytes) for files.
+- `ASSET_ALLOWED_EXTENSIONS`: Pipe-separated list of allowed file extensions for uploads.
+
+Example:
+
+```
+DATABASE_URL=mysql://user:pass@localhost/test_db
 ```
 
 ---
@@ -158,7 +186,7 @@ Recommended structure:
 
 - Database access via `sqlx` with strongly typed queries.
 - UUIDs stored as `CHAR(36)`, fixed length for performance.
-- Database queries are implemented under each domain's `repository/` module (e.g., `user/repository/user_queries.rs`).
+- Database queries are implemented under each domain's module `repository.rs`, `queries.rs` (e.g., `user/repository.rs`, `user/queries.rs`).
 
 ---
 
@@ -254,7 +282,7 @@ Example schemas to support the domain modules:
   - Accept DTOs
   - Call domain/application services
   - Return serialized response DTOs
-- Each domain contains its own `controller/` module with `routes.rs` and `handlers.rs` files.
+- Each domain contains its own module with `routes.rs` and `handlers.rs` files.
 - **Multipart File Upload:** Some endpoints, such as `create_user`, accept file uploads via the `Multipart` extractor. This enables asynchronous processing of each form part—whether it's file data or other form fields—ensuring efficient streaming and robust validation. Each file should be verified for content type, sanitized to prevent directory traversal or injection attacks, and stored securely. This approach not only enhances flexibility in handling user input but also bolsters the system’s security posture.
 - **Protected File Serving:** Implement endpoints like `serve_protected_file` to securely serve static files or resources. This handler should verify user permissions through tokens, session validations, or appropriate authorization headers, ensuring that only authenticated users can access the protected files. Additionally, it should enforce file path sanitization to prevent directory traversal attacks and may include caching strategies for performance optimization.
 
@@ -262,7 +290,7 @@ Example schemas to support the domain modules:
 
 ### 🧾 DTOs & Mapping
 
-- Request and response models live in each domain's `controller/` module (e.g., `user/controller/user_dto.rs`).
+- Request and response models live in each domain's `dto.rs` module (e.g., `user/dto.rs`).
 - Explicit conversion between domain models and DTOs.
 - Validation (e.g., enums, formats) handled at DTO level or via `serde`.
 - For enhanced input validation, consider utilizing the [`validator`](https://docs.rs/validator) crate. This crate leverages the `#[derive(Validate)]` procedural macro to annotate DTO fields with constraints (e.g., ensuring strings are not empty, emails are valid, etc.). For example:
@@ -282,8 +310,6 @@ Example schemas to support the domain modules:
 
 After deserialization, call `.validate()` on the DTO instance to enforce these rules and handle any errors gracefully.
 
-- DTOs may live under each domain’s `controller/` folder or in `shared/` if reused.
-
 ---
 
 ### 📚 API Documentation with utoipa
@@ -300,16 +326,6 @@ After deserialization, call `.validate()` on the DTO instance to enforce these r
 - **Unit tests**: Verify domain logic.
 - **Integration tests**: Use Axum and a test DB.
 - `#[tokio::test]` + `tower::ServiceExt` for realistic HTTP simulation.
-
----
-
-### 🧪 .env for Integration
-
-Store test-specific config:
-
-```
-DATABASE_URL=mysql://user:pass@localhost/test_db
-```
 
 ---
 
