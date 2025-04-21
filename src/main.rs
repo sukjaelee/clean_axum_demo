@@ -1,13 +1,13 @@
 use app::create_router;
-// src/main.rs
-use shared::config::{setup_database, Config};
+
+use common::config::{setup_database, Config};
 use tracing::info;
 
 mod app;
 mod auth;
+mod common;
 mod device;
 mod file;
-mod shared;
 mod user;
 
 /// Main entry point for the application.

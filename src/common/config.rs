@@ -5,6 +5,7 @@ use sqlx::{
 };
 use std::{env, str::FromStr};
 
+/// Config is a struct that holds the configuration for the application.
 #[derive(Default, Clone, Debug, Deserialize)]
 pub struct Config {
     pub database_url: String,
@@ -23,6 +24,9 @@ pub struct Config {
     pub asset_max_size: usize,
 }
 
+/// from_env reads the environment variables and returns a Config struct.
+/// It uses the dotenv crate to load environment variables from a .env file if it exists.
+/// It returns a Result with the Config struct or an error if any of the environment variables are missing.
 impl Config {
     pub fn from_env() -> Result<Self, env::VarError> {
         dotenv::dotenv().ok();
@@ -49,6 +53,7 @@ impl Config {
     }
 }
 
+/// setup_database initializes the database connection pool.
 pub async fn setup_database(config: &Config) -> Result<MySqlPool, sqlx::Error> {
     // Create connection options
     let connect_options = MySqlConnectOptions::from_str(&config.database_url)

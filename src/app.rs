@@ -25,21 +25,21 @@ use utoipa::OpenApi;
 
 use crate::{
     auth::routes::user_auth_routes,
-    device::routes::device_routes,
-    file::routes::file_routes,
-    shared::{
+    common::{
         app_state::AppState,
         config::Config,
         error::{handle_error, AppError},
         jwt,
     },
+    device::routes::device_routes,
+    file::routes::file_routes,
     user::routes::user_routes,
 };
 
-use crate::auth::handlers::UserAuthApiDoc;
-use crate::device::handlers::DeviceApiDoc;
-use crate::file::handlers::FileApiDoc;
-use crate::user::handlers::UserApiDoc;
+use crate::auth::routes::UserAuthApiDoc;
+use crate::device::routes::DeviceApiDoc;
+use crate::file::routes::FileApiDoc;
+use crate::user::routes::UserApiDoc;
 use utoipa_swagger_ui::SwaggerUi;
 
 fn create_swagger_ui() -> SwaggerUi {
@@ -61,11 +61,13 @@ pub fn create_router(pool: MySqlPool, config: Config) -> Router {
     // Create the shared state by calling the constructor in config.rs
     let state = AppState::new(pool, config.clone());
 
+    // Create cors middleware
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
         .allow_origin(Any)
         .allow_headers([AUTHORIZATION, CONTENT_TYPE]);
 
+    // setup handler for errors, cors, timeout, and logging
     let middleware_stack = ServiceBuilder::new()
         .layer(HandleErrorLayer::new(handle_error))
         .timeout(Duration::from_secs(1800))
@@ -77,9 +79,9 @@ pub fn create_router(pool: MySqlPool, config: Config) -> Router {
 
     // setup protected routes
     let protected_routes = Router::new()
-        .nest("/users", user_routes())
-        .nest("/devices", device_routes())
-        .nest("/files", file_routes())
+        .nest("/user", user_routes())
+        .nest("/device", device_routes())
+        .nest("/file", file_routes())
         .route_layer(middleware::from_fn(jwt::jwt_auth));
 
     // setup assets routes
@@ -88,6 +90,10 @@ pub fn create_router(pool: MySqlPool, config: Config) -> Router {
         ServeDir::new(config.assets_public_path),
     );
 
+    // Create the main router
+    // and merge all the routes
+    // and add the middleware stack
+    // and add the state
     Router::new()
         .route("/health", axum::routing::get(health_check))
         .merge(public_routes)
@@ -120,6 +126,8 @@ pub fn create_router(pool: MySqlPool, config: Config) -> Router {
         .with_state(state)
 }
 
+//// Setup tracing for the application.
+/// This function initializes the tracing subscriber with a default filter and formatting.
 pub fn setup_tracing() {
     tracing_subscriber::registry()
         .with(
@@ -139,16 +147,23 @@ pub fn setup_tracing() {
         .init();
 }
 
+/// Fallback handler for unmatched routes
+/// This function returns a 404 Not Found response with a message.
 pub async fn fallback() -> Result<impl IntoResponse, AppError> {
     Ok((StatusCode::NOT_FOUND, "Not Found"))
 }
 
+/// Shutdown signal handler
+/// This function listens for a shutdown signal (CTRL+C) and logs a message when received.
 pub async fn shutdown_signal() {
     tokio::signal::ctrl_c()
         .await
         .expect("Failed to install CTRL+C signal handler");
 }
 
+/// Middleware to print request and response bodies
+/// This function intercepts the request and response, buffers the body, and prints it to the log.
+/// It is used for debugging purposes to inspect the request and response data.
 async fn print_request_response(
     req: Request,
     next: Next,
@@ -167,6 +182,8 @@ async fn print_request_response(
     Ok(res)
 }
 
+/// Buffer and print the request/response body
+/// This function collects the body data into bytes and prints it to the log.
 async fn buffer_and_print<B>(direction: &str, body: B) -> Result<Bytes, (StatusCode, String)>
 where
     B: axum::body::HttpBody<Data = Bytes>,

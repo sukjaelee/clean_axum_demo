@@ -1,181 +1,211 @@
-use axum::{
-    extract::{Path, State},
-    http::StatusCode,
-    response::IntoResponse,
-    Extension, Json,
-};
+use axum::http::{Method, StatusCode};
+
 use clean_axum_demo::{
+    common::dto::RestApiResponse,
     device::{
-        dto::{CreateDevice, UpdateDevice, UpdateDeviceWithId, UpdateManyDevices},
-        handlers::{
-            create_device, delete_device, get_device_by_id, get_devices, update_device,
-            update_many_devices,
+        dto::{
+            CreateDeviceDto, DeviceDto, UpdateDeviceDto, UpdateDeviceDtoWithIdDto,
+            UpdateManyDevicesDto,
         },
         model::{DeviceOS, DeviceStatus},
     },
-    shared::{error::AppError, jwt::Claims},
 };
+
+use uuid::Uuid;
 mod test_helpers;
-use test_helpers::setup_test_db_state;
+use test_helpers::{
+    deserialize_json_body, request_with_auth, request_with_auth_and_body, TEST_USER_ID,
+};
 
 #[tokio::test]
-async fn test_create_device() -> Result<(), AppError> {
-    let state = setup_test_db_state().await;
+async fn test_create_device() {
+    let name = format!("test-device-{}", Uuid::new_v4()).to_string();
 
-    let payload = CreateDevice {
-        name: "Integration 테스트 Device4".to_string(),
-        user_id: "00000000-0000-0000-0000-000000000001".to_string(),
+    let payload = CreateDeviceDto {
+        name,
+        user_id: TEST_USER_ID.to_string(),
         device_os: DeviceOS::Android,
         status: DeviceStatus::Active,
-        modified_by: "00000000-0000-0000-0000-000000000001".to_string(),
+        modified_by: TEST_USER_ID.to_string(),
     };
 
-    let claims = Claims {
-        sub: "00000000-0000-0000-0000-000000000021".to_string(),
-        ..Default::default()
-    };
+    let response = request_with_auth_and_body(Method::POST, "/device", &payload);
 
-    let response = create_device(State(state.unwrap()), Extension(claims), Json(payload)).await?;
-    let status = response.into_response().status();
-    assert_eq!(status, StatusCode::OK);
+    let (parts, body) = response.await.into_parts();
 
-    Ok(())
+    assert_eq!(parts.status, StatusCode::OK);
+
+    let response_body: RestApiResponse<DeviceDto> = deserialize_json_body(body).await.unwrap();
+
+    assert_eq!(response_body.0.status, StatusCode::OK);
+    let device_dto = response_body.0.data.unwrap();
+
+    assert_eq!(device_dto.name, payload.name);
+    assert_eq!(device_dto.user_id, payload.user_id);
+    assert_eq!(device_dto.device_os, payload.device_os);
+    assert_eq!(device_dto.status, payload.status);
+    assert_ne!(device_dto.modified_by, Some(payload.modified_by));
+}
+
+async fn get_devices() -> Vec<DeviceDto> {
+    let response = request_with_auth(Method::GET, "/device");
+
+    let (parts, body) = response.await.into_parts();
+
+    assert_eq!(parts.status, StatusCode::OK);
+
+    let response_body: RestApiResponse<Vec<DeviceDto>> = deserialize_json_body(body).await.unwrap();
+
+    assert_eq!(response_body.0.status, StatusCode::OK);
+
+    response_body.0.data.unwrap()
 }
 
 #[tokio::test]
-async fn test_get_devices() -> Result<(), AppError> {
-    let state = setup_test_db_state().await;
-
-    let response = get_devices(State(state.unwrap())).await.into_response();
-    assert_eq!(response.status(), StatusCode::OK);
-
-    Ok(())
+async fn test_get_devices() {
+    let devices = get_devices().await;
+    // println!("devices: {:?}", devices);
+    assert!(!devices.is_empty());
 }
 
 #[tokio::test]
-async fn test_get_device_by_id() -> Result<(), AppError> {
-    let state = setup_test_db_state().await;
+async fn test_get_device_by_id() {
+    let devices = get_devices().await;
+    let existent_id = &devices[0].id;
 
-    let existent_id = "b0a994dd-15b2-11f0-8457-0242ac110002";
+    let url = format!("/device/{}", existent_id);
+    let response = request_with_auth(Method::GET, url.as_str());
 
-    let response = get_device_by_id(
-        State(state.unwrap()),
-        axum::extract::Path(existent_id.to_string()),
-    )
-    .await?
-    .into_response();
+    let (parts, body) = response.await.into_parts();
 
-    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(parts.status, StatusCode::OK);
 
-    Ok(())
+    let response_body: RestApiResponse<DeviceDto> = deserialize_json_body(body).await.unwrap();
+
+    assert_eq!(response_body.0.status, StatusCode::OK);
+
+    let response_device = response_body.0.data.unwrap();
+
+    assert_eq!(response_device.id, *existent_id);
+    assert_eq!(response_device.name, devices[0].name);
+    assert_eq!(response_device.user_id, devices[0].user_id);
+    assert_eq!(response_device.device_os, devices[0].device_os);
+    assert_eq!(response_device.status, devices[0].status);
 }
 
 #[tokio::test]
-async fn test_update_device() -> Result<(), AppError> {
-    let state = setup_test_db_state().await;
+async fn test_update_device() {
+    let devices = get_devices().await;
+    let existent_device = &devices[0];
 
-    let update_payload = UpdateDevice {
-        name: Some("Updated Name2-1".to_string()),
-        user_id: Some("00000000-0000-0000-0000-000000000001".to_string()),
+    let name = format!("update-device-{}", Uuid::new_v4()).to_string();
+
+    let payload = UpdateDeviceDto {
+        name: Some(name),
+        user_id: Some(existent_device.user_id.clone()),
         device_os: Some(DeviceOS::IOS),
         status: Some(DeviceStatus::Decommissioned),
-        modified_by: "00000000-0000-0000-0000-000000000001".to_string(),
+        modified_by: existent_device.modified_by.clone().unwrap_or_default(),
     };
 
-    let existent_id = "b0a99b38-15b2-11f0-8457-0242ac110002";
+    let existent_id = existent_device.id.clone();
 
-    let claims = Claims {
-        sub: "00000000-0000-0000-0000-000000000021".to_string(),
-        ..Default::default()
-    };
+    let url = format!("/device/{}", existent_id);
 
-    let response = update_device(
-        State(state.unwrap()),
-        Extension(claims),
-        axum::extract::Path(existent_id.to_string()),
-        Json(update_payload),
-    )
-    .await?
-    .into_response();
+    let response = request_with_auth_and_body(Method::PUT, url.as_str(), &payload);
 
-    assert_eq!(response.status(), StatusCode::OK);
+    let (parts, body) = response.await.into_parts();
 
-    Ok(())
+    assert_eq!(parts.status, StatusCode::OK);
+
+    let response_body: RestApiResponse<DeviceDto> = deserialize_json_body(body).await.unwrap();
+
+    assert_eq!(response_body.0.status, StatusCode::OK);
+
+    let response_device = response_body.0.data.unwrap();
+
+    assert_eq!(response_device.id, *existent_id);
+    assert_eq!(Some(response_device.name), payload.name);
+    assert_eq!(Some(response_device.user_id), payload.user_id);
+    assert_eq!(Some(response_device.device_os), payload.device_os);
+    assert_eq!(Some(response_device.status), payload.status);
 }
 
 #[tokio::test]
-async fn test_delete_device_not_found() -> Result<(), AppError> {
-    let state = setup_test_db_state().await;
-
+async fn test_delete_device_not_found() {
     let non_existent_id = uuid::Uuid::new_v4();
-    let response = delete_device(
-        State(state.unwrap()),
-        axum::extract::Path(non_existent_id.to_string()),
-    )
-    .await?
-    .into_response();
 
-    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    let url = format!("/device/{}", non_existent_id);
+    let response = request_with_auth(Method::DELETE, url.as_str());
 
-    Ok(())
+    let (parts, body) = response.await.into_parts();
+
+    assert_eq!(parts.status, StatusCode::NOT_FOUND);
+
+    let response_body: RestApiResponse<()> = deserialize_json_body(body).await.unwrap();
+
+    assert_eq!(response_body.0.status, StatusCode::NOT_FOUND);
+    // println!("response_body.0.status: {:?}", response_body.0.status);
+    // println!("response_body.0.message: {:?}", response_body.0.message);
 }
 
 #[tokio::test]
-async fn test_delete_device() -> Result<(), AppError> {
-    let state = setup_test_db_state().await;
+async fn test_delete_device() {
+    let devices = get_devices().await;
+    let existent_device = &devices[0];
+    let existent_id = existent_device.id.clone();
 
-    let existent_id = "b0a994dd-15b2-11f0-8457-0242ac110002";
+    let url = format!("/device/{}", existent_id);
+    let response = request_with_auth(Method::DELETE, url.as_str());
 
-    let response = delete_device(
-        State(state.unwrap()),
-        axum::extract::Path(existent_id.to_string()),
-    )
-    .await?
-    .into_response();
+    let (parts, body) = response.await.into_parts();
+    assert_eq!(parts.status, StatusCode::OK);
 
-    assert_eq!(response.status(), StatusCode::OK);
+    let response_body: RestApiResponse<()> = deserialize_json_body(body).await.unwrap();
 
-    Ok(())
+    assert_eq!(response_body.0.status, StatusCode::OK);
+    // println!("response_body.0.status: {:?}", response_body.0.status);
+    // println!("response_body.0.message: {:?}", response_body.0.message);
 }
 
 #[tokio::test]
-async fn test_update_many_devices() -> Result<(), AppError> {
-    let state = setup_test_db_state().await;
+async fn test_update_many_devices() {
+    let devices = get_devices().await;
+    let existent_device = &devices[0];
 
-    let user_id = "00000000-0000-0000-0000-000000000001";
+    let user_id = TEST_USER_ID.to_string();
 
-    let payload = UpdateManyDevices {
+    let name1 = format!("many-update-device-{}", Uuid::new_v4()).to_string();
+    let name2 = format!("many-update-in-device-{}", Uuid::new_v4()).to_string();
+
+    let payload = UpdateManyDevicesDto {
         devices: vec![
-            UpdateDeviceWithId {
-                id: Some("b0a99bdc-15b2-11f0-8457-0242ac110002".to_string()),
-                name: "Bulk Device 1-1".to_string(),
+            UpdateDeviceDtoWithIdDto {
+                id: Some(existent_device.id.clone()),
+                name: name1.clone(),
                 device_os: DeviceOS::IOS,
                 status: DeviceStatus::Blocked,
             },
-            UpdateDeviceWithId {
+            UpdateDeviceDtoWithIdDto {
                 id: None,
-                name: "Bulk Device 2-1".to_string(),
+                name: name2.clone(),
                 device_os: DeviceOS::Android,
                 status: DeviceStatus::Pending,
             },
         ],
     };
 
-    let claims = Claims {
-        sub: "00000000-0000-0000-0000-000000000021".to_string(),
-        ..Default::default()
-    };
+    let url = format!("/device/batch/{}", user_id);
 
-    let response = update_many_devices(
-        State(state.unwrap()),
-        Extension(claims),
-        Path(user_id.to_string()),
-        Json(payload),
-    )
-    .await?
-    .into_response();
+    let response = request_with_auth_and_body(Method::PUT, url.as_str(), &payload);
 
-    assert_eq!(response.status(), StatusCode::OK);
+    let (parts, body) = response.await.into_parts();
 
-    Ok(())
+    assert_eq!(parts.status, StatusCode::OK);
+
+    let response_body: RestApiResponse<()> = deserialize_json_body(body).await.unwrap();
+
+    assert_eq!(response_body.0.status, StatusCode::OK);
+    // println!("response_body.0.status: {:?}", response_body.0.status);
+    // println!("response_body.0.message: {:?}", response_body.0.message);
 }

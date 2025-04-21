@@ -3,11 +3,17 @@ use axum::{
     response::{IntoResponse, Response},
     BoxError,
 };
-use serde::Serialize;
+
 use sqlx::Error as SqlxError;
 use thiserror::Error;
 use tracing::error;
 
+use crate::common::dto::RestApiResponse;
+
+use super::dto::ApiResponse;
+
+/// AppError is an enum that represents various types of errors that can occur in the application.
+/// It implements the `std::error::Error` trait and the `axum::response::IntoResponse` trait.
 #[derive(Error, Debug)]
 pub enum AppError {
     #[error("Database error: {0}")]
@@ -45,11 +51,8 @@ pub enum AppError {
     UserNotFound,
 }
 
-#[derive(Serialize)]
-struct ErrorResponse {
-    error: String,
-}
-
+/// Converts the AppError enum into an HTTP response.
+/// It maps the error to an appropriate HTTP status code and constructs a JSON response body.
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let status = match self {
@@ -66,20 +69,22 @@ impl IntoResponse for AppError {
             AppError::TokenCreation => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::UserNotFound => StatusCode::NOT_FOUND,
         };
-        let body = axum::Json(ErrorResponse {
-            error: self.to_string(),
+        let body = axum::Json(ApiResponse::<()> {
+            status: status.as_u16(),
+            message: self.to_string(),
+            data: None,
         });
 
         (status, body).into_response()
     }
 }
 
+/// handle_error is a function that middlewares the error handling in the application.
+/// It takes a BoxError as input and returns an HTTP response.
+/// It maps the error to an appropriate HTTP status code and constructs a JSON response body.
+/// The function is used to handle errors that occur during the request processing.
+/// It is designed to be used with the axum framework.
 pub async fn handle_error(error: BoxError) -> impl IntoResponse {
-    // Example usage of DatabaseError
-    let _db_error: AppError = sqlx::Error::RowNotFound.into();
-
-    // Example usage of NotFound
-    let _not_found_error = AppError::NotFound;
     let status = if error.is::<tower::timeout::error::Elapsed>() {
         StatusCode::REQUEST_TIMEOUT
     } else {
@@ -89,5 +94,7 @@ pub async fn handle_error(error: BoxError) -> impl IntoResponse {
     let message = error.to_string();
     error!(?status, %message, "Request failed");
 
-    (status, axum::Json(ErrorResponse { error: message }))
+    let body = RestApiResponse::<()>::failure(status.as_u16(), message);
+
+    (status, body)
 }

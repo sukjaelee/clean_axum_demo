@@ -30,7 +30,7 @@ impl FileRepository for FileRepo {
         .await?;
 
         let inserted_file = sqlx::query_as!(UploadedFile,
-            r#"SELECT id, user_id, file_name, origin_file_name, file_relative_path, file_url, content_type, file_size, file_type, created_by, created_at, modified_by, updated_at as modified_at 
+            r#"SELECT id, user_id, file_name, origin_file_name, file_relative_path, file_url, content_type, file_size, file_type, created_by, created_at, modified_by, modified_at 
             FROM uploaded_files 
             WHERE user_id = ? and file_name = ?"#,
             file.user_id,
@@ -48,7 +48,7 @@ impl FileRepository for FileRepo {
         user_id: String,
     ) -> Result<Option<UploadedFile>, sqlx::Error> {
         let uploaded_file = sqlx::query_as!(UploadedFile,
-            r#"SELECT id, user_id, file_name, origin_file_name, file_relative_path, file_url, content_type, file_size, file_type, created_by, created_at, modified_by, updated_at as modified_at 
+            r#"SELECT id, user_id, file_name, origin_file_name, file_relative_path, file_url, content_type, file_size, file_type, created_by, created_at, modified_by, modified_at 
             FROM uploaded_files 
             WHERE user_id = ?"#,
             user_id
@@ -65,7 +65,7 @@ impl FileRepository for FileRepo {
         id: String,
     ) -> Result<Option<UploadedFile>, sqlx::Error> {
         let uploaded_file = sqlx::query_as!(UploadedFile,
-            r#"SELECT id, user_id, file_name, origin_file_name, file_relative_path, file_url, content_type, file_size, file_type, created_by, created_at, modified_by, updated_at as modified_at 
+            r#"SELECT id, user_id, file_name, origin_file_name, file_relative_path, file_url, content_type, file_size, file_type, created_by, created_at, modified_by, modified_at 
             FROM uploaded_files 
             WHERE id = ?"#,
             id

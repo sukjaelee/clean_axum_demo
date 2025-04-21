@@ -1,5 +1,5 @@
 use super::{
-    dto::{CreateUserMultipart, UpdateUser},
+    dto::{CreateUserMultipartDto, UpdateUserDto},
     model::User,
 };
 
@@ -13,13 +13,13 @@ pub trait UserRepository: Send + Sync {
     async fn create(
         &self,
         tx: &mut Transaction<'_, MySql>,
-        user: CreateUserMultipart,
+        user: CreateUserMultipartDto,
     ) -> Result<String, sqlx::Error>;
     async fn update(
         &self,
         tx: &mut Transaction<'_, MySql>,
         id: String,
-        user: UpdateUser,
+        user: UpdateUserDto,
     ) -> Result<Option<User>, sqlx::Error>;
     async fn delete(
         &self,

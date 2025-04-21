@@ -1,5 +1,5 @@
 use super::{
-        dto::{CreateDevice, UpdateDevice, UpdateManyDevices},
+        dto::{CreateDeviceDto, UpdateDeviceDto, UpdateManyDevicesDto},
         model::Device,
     };
 use async_trait::async_trait;
@@ -39,7 +39,7 @@ impl DeviceRepository for DeviceRepo {
     async fn create(
         &self,
         tx: &mut Transaction<'_, MySql>,
-        device: CreateDevice,
+        device: CreateDeviceDto,
     ) -> Result<Device, sqlx::Error> {
         sqlx::query!(r#"INSERT INTO devices (user_id, name, status, device_os, registered_at, created_by, created_at, modified_by, modified_at) VALUES (?, ?, ?, ?, now(), ?, now(), ?, now())"#,
                      device.user_id,
@@ -67,7 +67,7 @@ impl DeviceRepository for DeviceRepo {
         &self,
         tx: &mut Transaction<'_, MySql>,
         id: String,
-        device: UpdateDevice,
+        device: UpdateDeviceDto,
     ) -> Result<Option<Device>, sqlx::Error> {
         let existing = sqlx::query!(r#"SELECT id FROM devices WHERE id = ?"#, &id)
             .fetch_optional(&mut **tx)
@@ -123,7 +123,7 @@ impl DeviceRepository for DeviceRepo {
         tx: &mut Transaction<'_, MySql>,
         user_id: String,
         modified_by: String,
-        update_devices: UpdateManyDevices,
+        update_devices: UpdateManyDevicesDto,
     ) -> Result<(), sqlx::Error> {
         let mut builder = QueryBuilder::<MySql>::new(
             r#"INSERT INTO devices (id, user_id, name, status, device_os, registered_at, created_by, created_at, modified_by, modified_at)"#

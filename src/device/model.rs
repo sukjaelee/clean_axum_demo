@@ -3,9 +3,9 @@ use std::{fmt, str::FromStr};
 use time::OffsetDateTime;
 use utoipa::ToSchema;
 
-use crate::shared::error::AppError;
+use crate::common::error::AppError;
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub enum DeviceStatus {
     #[serde(rename = "active")]
     Active,
@@ -52,7 +52,7 @@ impl From<String> for DeviceStatus {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub enum DeviceOS {
     #[serde(rename = "Android")]
     Android,
@@ -87,19 +87,16 @@ impl From<String> for DeviceOS {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone)]
 pub struct Device {
     pub id: String,
     pub user_id: String,
     pub name: String,
     pub device_os: DeviceOS,
     pub status: DeviceStatus,
-    #[serde(with = "crate::shared::ts_format::option")]
     pub registered_at: Option<OffsetDateTime>,
     pub created_by: Option<String>,
-    #[serde(with = "crate::shared::ts_format::option")]
     pub created_at: Option<OffsetDateTime>,
     pub modified_by: Option<String>,
-    #[serde(with = "crate::shared::ts_format::option")]
     pub modified_at: Option<OffsetDateTime>,
 }

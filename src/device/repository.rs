@@ -15,20 +15,20 @@ pub trait DeviceRepository: Send + Sync {
     async fn create(
         &self,
         tx: &mut Transaction<'_, MySql>,
-        device: CreateDevice,
+        device: CreateDeviceDto,
     ) -> Result<Device, sqlx::Error>;
     async fn update(
         &self,
         tx: &mut Transaction<'_, MySql>,
         id: String,
-        device: UpdateDevice,
+        device: UpdateDeviceDto,
     ) -> Result<Option<Device>, sqlx::Error>;
     async fn update_many(
         &self,
         tx: &mut Transaction<'_, MySql>,
         user_id: String,
         modified_by: String,
-        update_devices: UpdateManyDevices,
+        update_devices: UpdateManyDevicesDto,
     ) -> Result<(), sqlx::Error>;
     async fn delete(
         &self,

@@ -4,9 +4,25 @@ Rust Axum Clean Demo – Basic API Template
 
 This document outlines a Rust API Server Sample Demo using Axum and SQLx. It integrates Clean Architecture principles, domain-driven design, repository patterns, Swagger documentation, and robust testing.
 
-## 🚀 How to Run
+## ✨ Features
+
+- ✅ Clean Architecture with layered domain separation
+- ✅ Axum-based HTTP server with modular routing
+- ✅ SQLx integration with compile-time query checking
+- ✅ JWT-based authentication and protected routes
+- ✅ File upload and secure asset serving
+- ✅ Swagger UI docs via utoipa
+
+## 🛠 Getting Started
+
+### Prerequisites
+
+- Rust (latest stable)
+- MySQL or MariaDB
+- (Optional) Docker and Docker Compose
 
 1. Create database tables:
+
    - Navigate to the `db-seed` directory and execute the SQL scripts in order:
 
      ```bash
@@ -15,7 +31,29 @@ This document outlines a Rust API Server Sample Demo using Axum and SQLx. It int
      mysql -u <user> -p <database> < seed.sql
      ```
 
-2. Prepare SQLx for offline compilation:
+2. Create and configure environment files:
+
+   - Copy the `.env` and `.env.test` templates or create your own:
+
+     ```bash
+     cp .env.example .env
+     cp .env.example .env.test
+     ```
+
+   - Edit the `.env` file to match your database and JWT configuration.
+
+     Example `.env`:
+
+     ```env
+     DATABASE_URL=mysql://user:password@localhost/clean_axum_demo
+     JWT_SECRET_KEY=your_super_secret_key
+     SERVICE_PORT=8080
+     ```
+
+   - Ensure `.env.test` contains test-specific values (e.g., test DB).
+
+3. Prepare SQLx for offline compilation:
+
    - Enable building queries offline by generating metadata with:
 
      ```bash
@@ -23,13 +61,14 @@ This document outlines a Rust API Server Sample Demo using Axum and SQLx. It int
      ```
 
    - For more details, see: <https://github.com/launchbadge/sqlx/tree/main/sqlx-cli>
-3. Start the application:
+
+4. Start the application:
 
    ```bash
    cargo run
    ```
 
-4. Example Login & Protected‑API Usage:
+5. Example Login & Protected‑API Usage:
 
    - Send a login request:
 
@@ -47,9 +86,9 @@ This document outlines a Rust API Server Sample Demo using Axum and SQLx. It int
        -H "Authorization: Bearer <token>"
      ```
 
-5. View the API documentation:
+6. View the API documentation:
    Open your browser and go to [http://localhost:8080/docs](http://localhost:8080/docs).
-6. Access protected endpoints:
+7. Access protected endpoints:
 
    - Authenticate by sending a `POST` request to `/auth/login` (e.g., via Swagger UI or curl).
 
@@ -70,12 +109,13 @@ Each domain module (e.g., `auth`, `device`, `file`, `user`) follows a consistent
 
 - `dto.rs`: Defines the DTO (Data Transfer Object) layer for the domain.
 - `handlers.rs`: Defines the HTTP handler layer for the domain.
+- `services.rs`: Contains domain service logic and use cases.
 - `model.rs`: Defines the domain model and business logic layer.
 - `queries.rs`: Defines raw SQLx query implementations.
 - `repository.rs`: Implements the repository pattern for database operations.
 - `routes.rs`: Defines HTTP route configuration for the domain.
 
-Organize your project by **domain-first modularity**. Each domain (e.g., `user`, `device`) encapsulates its own types, database queries, routes, and handlers. This ensures high cohesion, better testability, and easy maintenance. Ensure that model structs fully reflect all table columns to prevent runtime issues.
+Organize your project by **domain-first modularity**. Each domain encapsulates its own types, services, database logic, and routing. This ensures high cohesion, better testability, and easier maintenance.
 
 Recommended structure:
 
@@ -85,9 +125,6 @@ Recommended structure:
 │   │   └── profile_picture
 │   │       ├── cat.png
 │   │       ├── cat(1).png
-│   │       ├── cat(2).png
-│   │       ├── cat(3).png
-│   │       ├── cat(4).png
 │   │       ├── images.jpeg
 │   │       └── mario_PNG52.png
 │   └── public                      # Publicly accessible static files
@@ -97,7 +134,10 @@ Recommended structure:
 ├── db-seed
 │   ├── seed.sql
 │   └── tables.sql
+├── LICENSE
 ├── README.md
+├── .env                 # Environment variables for development/runtime configuration
+├── .env.test            # Environment variables used specifically during test execution
 ├── src
 │   ├── app.rs               # Axum router setup & middleware configuration
 │   ├── auth
@@ -107,7 +147,17 @@ Recommended structure:
 │   │   ├── model.rs
 │   │   ├── queries.rs
 │   │   ├── repository.rs
-│   │   └── routes.rs
+│   │   ├── routes.rs
+│   │   └── services.rs
+│   ├── common
+│   │   ├── app_state.rs         # Global application state container shared across routes
+│   │   ├── config.rs            # Environment and runtime configuration loading
+│   │   ├── dto.rs               # Shared API response wrapper DTOs (e.g., ApiResponse<T>)
+│   │   ├── error.rs             # Centralized error definitions and handling via AppError
+│   │   ├── hash_util.rs         # Utility for password hashing and verification (e.g., bcrypt)
+│   │   ├── jwt.rs               # JWT creation, decoding, and validation logic
+│   │   ├── mod.rs
+│   │   └── ts_format.rs         # Custom timestamp formatting for JSON serialization
 │   ├── device
 │   │   ├── dto.rs
 │   │   ├── handlers.rs
@@ -115,7 +165,8 @@ Recommended structure:
 │   │   ├── model.rs
 │   │   ├── queries.rs
 │   │   ├── repository.rs
-│   │   └── routes.rs
+│   │   ├── routes.rs
+│   │   └── services.rs
 │   ├── file
 │   │   ├── dto.rs
 │   │   ├── handlers.rs
@@ -123,17 +174,10 @@ Recommended structure:
 │   │   ├── model.rs
 │   │   ├── queries.rs
 │   │   ├── repository.rs
-│   │   └── routes.rs
+│   │   ├── routes.rs
+│   │   └── services.rs
 │   ├── lib.rs
 │   ├── main.rs
-│   ├── shared
-│   │   ├── app_state.rs     # Shared application state (DB pool, repositories, config)
-│   │   ├── config.rs        # Application-level configuration loader
-│   │   ├── error.rs         # Centralized error definitions and mappings
-│   │   ├── hash_util.rs     # Utility functions for password hashing (e.g., bcrypt)
-│   │   ├── jwt.rs           # JWT encoding/decoding helpers
-│   │   ├── mod.rs
-│   │   └── ts_format.rs     # Timestamp serialization helpers for consistent API output
 │   └── user
 │       ├── dto.rs
 │       ├── handlers.rs
@@ -141,16 +185,66 @@ Recommended structure:
 │       ├── model.rs
 │       ├── queries.rs
 │       ├── repository.rs
-│       └── routes.rs
-└── tests                         # Integration tests using real endpoints and data
+│       ├── routes.rs
+│       └── services.rs
+└── tests                        # Integration tests using real endpoints and data
     ├── asset                    # Static files used in test scenarios (e.g., file uploads)
     │   ├── cat.png
     │   └── mario_PNG52.png
-    ├── test_device_routes.rs    # Device route integration tests
-    ├── test_helpers.rs          # Shared test setup utilities
-    ├── test_user_auth_routes.rs # Auth route integration tests
-    └── test_user_routes.rs      # User route integration tests
+    ├── test_auth_routes.rs
+    ├── test_device_routes.rs
+    ├── test_helpers.rs
+    └── test_user_routes.rs
 ```
+
+---
+
+### 📦 API Response Format
+
+All API endpoints return a consistent JSON envelope, defined using the `ApiResponse<T>` and `RestApiResponse<T>` types:
+
+```json
+{
+  "status": 200,
+  "message": "success",
+  "data": {
+    ... // actual payload here
+  }
+}
+```
+
+#### `ApiResponse<T>`
+
+A generic structure representing success or error states for API calls:
+
+```rust
+pub struct ApiResponse<T> {
+    pub status: u16,
+    pub message: String,
+    pub data: Option<T>,
+}
+```
+
+- `status`: HTTP status code (e.g. 200, 404)
+- `message`: Human-readable description
+- `data`: Optional actual response payload
+
+#### `RestApiResponse<T>`
+
+A convenience wrapper for returning `ApiResponse<T>` directly from handlers:
+
+```rust
+pub struct RestApiResponse<T>(pub ApiResponse<T>);
+```
+
+This type implements `IntoResponse` for Axum, allowing clean usage:
+
+```rust
+Ok(RestApiResponse::success(payload))
+Ok(RestApiResponse::failure(404, "Item not found"))
+```
+
+Use `ApiResponse<T>` for Swagger documentation (`utoipa`), and return `RestApiResponse<T>` from handler functions.
 
 ---
 
@@ -279,7 +373,7 @@ Example schemas to support the domain modules:
 | created_by         | CHAR(36)     | ID of the creator                                    |
 | created_at         | TIMESTAMP    | Timestamp of creation (default is current timestamp) |
 | modified_by        | CHAR(36)     | ID of the last modifier                              |
-| updated_at         | TIMESTAMP    | Timestamp of last update (auto-updated)              |
+| modified_at        | TIMESTAMP    | Timestamp of last update (auto-updated)              |
 
 ---
 
@@ -291,7 +385,7 @@ Example schemas to support the domain modules:
   - Return serialized response DTOs
 - Each domain contains its own module with `routes.rs` and `handlers.rs` files.
 - **Multipart File Upload:** Some endpoints, such as `create_user`, accept file uploads via the `Multipart` extractor. This enables asynchronous processing of each form part—whether it's file data or other form fields—ensuring efficient streaming and robust validation. Each file should be verified for content type, sanitized to prevent directory traversal or injection attacks, and stored securely. This approach not only enhances flexibility in handling user input but also bolsters the system’s security posture.
-- **Protected File Serving:** Implement endpoints like `serve_protected_file` to securely serve static files or resources. This handler should verify user permissions through tokens, session validations, or appropriate authorization headers, ensuring that only authenticated users can access the protected files. Additionally, it should enforce file path sanitization to prevent directory traversal attacks and may include caching strategies for performance optimization.
+- **Protected File Serving:** Implement endpoints like `serve_protected_file` to securely serve static files or resources. This handler should verify user permissions through tokens, session validations, or appropriate authentication headers, ensuring that only authenticated users can access the protected files. Additionally, it should enforce file path sanitization to prevent directory traversal attacks and may include caching strategies for performance optimization.
 
 ---
 
@@ -346,7 +440,70 @@ After deserialization, call `.validate()` on the DTO instance to enforce these r
 
 ---
 
-### 📝 TODO
+## 🚧 Roadmap
 
-1. Enhance tests with the [`axum-test`](https://crates.io/crates/axum-test) crate for more expressive and robust integration testing.
-2. Add a `docker-compose.yml` to simplify local setup with MariaDB and seeded data.
+Here’s a high-level roadmap for evolving the architecture and infrastructure of this project:
+
+### 1. 🛠️ Hexagonal Architecture (Ports & Adapters)
+
+**Goal:** Decouple infrastructure concerns from core domain logic for greater flexibility and testability.
+
+**Steps:**
+
+- Create separate crates for:
+  - `domain`: core business rules and types
+  - `infra`: SQLx, JWT, File I/O, etc.
+  - `app`: service orchestration (use cases)
+  - `web`: HTTP adapter (Axum)
+- Define all repository/service traits (ports) in the `domain` layer.
+- Implement adapters for HTTP, database, and storage that live in `infra`.
+- Enable future support for gRPC, CLI, or background workers.
+
+---
+
+### 2. 📈 OpenTelemetry for Tracing & Metrics
+
+**Goal:** Add observability with distributed tracing, logs, and metrics.
+
+**Steps:**
+
+- Integrate `tracing`, `tracing_subscriber`, and `opentelemetry` crates.
+- Export traces to tools like Jaeger or Zipkin.
+- Add span instrumentation to Axum routes, DB queries, and service functions.
+- Enable structured logs for better debugging.
+
+---
+
+### 3. 🔄 Migrate from MySQL to PostgreSQL
+
+**Goal:** Adopt a more feature-rich and scalable relational database.
+
+**Steps:**
+
+- Update `DATABASE_URL` to use `postgres://`
+- Switch to native `UUID` columns instead of `CHAR(36)`
+- Use PostgreSQL-specific features like `jsonb`, `ON CONFLICT DO UPDATE`, etc.
+- Update `.sql` seed and table definitions accordingly
+
+---
+
+### ✅ Optional Enhancements
+
+| Feature                     | Benefit                                            |
+| --------------------------- | -------------------------------------------------- |
+| ✨ gRPC support via `tonic` | Enable machine-to-machine API communication        |
+| 📦 Workspace structure      | Modularize code into `core`, `web`, `infra` crates |
+| 🔐 Role-based access (RBAC) | Control access to endpoints based on user roles    |
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License. See [LICENSE](./LICENSE) for details.
+
+## 🔗 Useful Links
+
+- [Axum Documentation](https://docs.rs/axum)
+- [SQLx Documentation](https://docs.rs/sqlx)
+- [Utoipa (OpenAPI)](https://docs.rs/utoipa)
+- [Tokio](https://tokio.rs/)

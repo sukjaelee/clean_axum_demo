@@ -1,64 +1,33 @@
-use super::model::UserAuth;
-use crate::shared::{
+use crate::common::{
     app_state::AppState,
+    dto::RestApiResponse,
     error::AppError,
-    hash_util,
-    jwt::{make_jwt_token, AuthBody, AuthPayload},
+    jwt::{AuthBody, AuthPayload},
 };
 use axum::extract::State;
 use axum::{response::IntoResponse, Json};
-use serde_json::json;
 
-use utoipa::OpenApi;
+use super::dto::AuthUserDto;
 
-use super::dto::AuthUser;
-
-#[derive(OpenApi)]
-#[openapi(
-    paths(
-        create_user_auth, login_user
-    ),
-    components(schemas(AuthUser)),
-    tags(
-        (name = "UserAuth", description = "User authentication endpoints")
-    )
-)]
-pub struct UserAuthApiDoc;
-
+/// this function creates a router for creating user authentication registration
+/// it will create a new user in the database
 #[utoipa::path(
     post,
     path = "/auth/register",
-    request_body = AuthUser,
-    responses((status = 200, description = "Create user authentication", body = AuthUser)),
+    request_body = AuthUserDto,
+    responses((status = 200, description = "Create user authentication", body = AuthUserDto)),
     tag = "UserAuth"
 )]
 pub async fn create_user_auth(
     State(state): State<AppState>,
-    Json(payload): Json<AuthUser>,
+    Json(payload): Json<AuthUserDto>,
 ) -> Result<impl IntoResponse, AppError> {
-    let mut tx = state.pool.begin().await?;
-
-    let password_hash =
-        hash_util::hash_password(&payload.password).map_err(|_| AppError::InternalError)?;
-
-    let user_auth = UserAuth {
-        user_id: payload.user_id,
-        password_hash: password_hash,
-    };
-
-    match state.user_auth_repo.create(&mut tx, user_auth).await {
-        Ok(()) => {
-            tx.commit().await?; // Commit the transaction
-            Ok(Json(json!({ "result": "success" })).into_response())
-        }
-        Err(err) => {
-            tracing::error!("Error creating user auth: {err}");
-            tx.rollback().await?; // Rollback the transaction
-            Err(AppError::DatabaseError(err))
-        }
-    }
+    state.auth_service.create_user_auth(payload).await?;
+    Ok(RestApiResponse::success(()))
 }
 
+/// this function creates a router for login user
+/// it will return a JWT token if the user is authenticated
 #[utoipa::path(
     post,
     path = "/auth/login",
@@ -70,31 +39,6 @@ pub async fn login_user(
     State(state): State<AppState>,
     Json(payload): Json<AuthPayload>,
 ) -> Result<impl IntoResponse, AppError> {
-    // Check if the user sent the credentials
-    if payload.client_id.is_empty() || payload.client_secret.is_empty() {
-        return Err(AppError::MissingCredentials);
-    }
-
-    // Check if the user exists in the database
-    let user_auth = state
-        .user_auth_repo
-        .find_by_user_name(state.pool, payload.client_id.clone())
-        .await
-        .map_err(|err| AppError::DatabaseError(err))?;
-
-    if user_auth.is_none() {
-        return Err(AppError::UserNotFound);
-    }
-
-    // Check if the password is correct
-    let user_auth = user_auth.unwrap();
-    if !hash_util::verify_password(&user_auth.password_hash, &payload.client_secret) {
-        return Err(AppError::WrongCredentials);
-    }
-
-    // Create the authorization token
-    let token = make_jwt_token(&user_auth.user_id).unwrap();
-
-    // Send the authorized token
-    Ok(Json(AuthBody::new(token)))
+    let auth_body = state.auth_service.login_user(payload).await?;
+    Ok(RestApiResponse::success(auth_body))
 }

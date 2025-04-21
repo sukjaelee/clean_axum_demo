@@ -1,4 +1,4 @@
-use super::dto::{CreateUserMultipart, UpdateUser};
+use super::dto::{CreateUserMultipartDto, UpdateUserDto};
 use super::{model::User, repository::UserRepository};
 use async_trait::async_trait;
 use sqlx::{MySql, Pool, Transaction};
@@ -61,7 +61,7 @@ impl UserRepository for UserRepo {
     async fn create(
         &self,
         tx: &mut Transaction<'_, MySql>,
-        user: CreateUserMultipart,
+        user: CreateUserMultipartDto,
     ) -> Result<String, sqlx::Error> {
         sqlx::query!(
             r#"INSERT INTO users (username, email, created_by, modified_by)
@@ -89,7 +89,7 @@ impl UserRepository for UserRepo {
         &self,
         tx: &mut Transaction<'_, MySql>,
         id: String,
-        user: UpdateUser,
+        user: UpdateUserDto,
     ) -> Result<Option<User>, sqlx::Error> {
         let existing = sqlx::query_as!(
             User,

@@ -1,78 +1,72 @@
-use axum::extract::State;
-use axum::http::Request;
-
-use axum::Extension;
-use axum::{body::Body, http::StatusCode, response::IntoResponse, Json};
+use axum::http::{Method, StatusCode};
 
 use clean_axum_demo::{
-    app::create_router,
-    file::handlers::delete_file,
-    shared::{config::Config, error::AppError, jwt::Claims},
-    user::{
-        dto::{CreateUserMultipart, UpdateUser},
-        handlers::{delete_user, get_user_by_id, get_users, update_user},
-    },
+    common::{dto::RestApiResponse, error::AppError},
+    user::dto::{CreateUserMultipartDto, UpdateUserDto, UserDto},
 };
 
 mod test_helpers;
 
-use test_helpers::{get_user_token, print_response, setup_test_db_state};
-use tower::ServiceExt;
+use test_helpers::{
+    deserialize_json_body, request_with_auth, request_with_auth_and_body,
+    request_with_auth_and_multipart, TEST_USER_ID,
+};
 
-#[tokio::test]
-async fn test_create_user() -> Result<(), AppError> {
-    let state = setup_test_db_state().await;
+async fn create_user() -> Result<(CreateUserMultipartDto, UserDto), AppError> {
+    let username = format!("testuser-{}", uuid::Uuid::new_v4()).to_string();
+    let email = format!("{}@test.com", username).to_string();
 
-    let payload = CreateUserMultipart {
-        username: "testuser-11".to_string(),
-        email: "testuser-11@test.com".to_string(),
-        modified_by: "00000000-0000-0000-0000-000000000001".to_string(),
+    let payload = CreateUserMultipartDto {
+        username,
+        email,
+        modified_by: TEST_USER_ID.to_string(),
         profile_picture: None,
     };
 
     let multipart_body = format!(
         "------XYZ\r\nContent-Disposition: form-data; name=\"username\"\r\n\r\n{}\r\n------XYZ\r\nContent-Disposition: form-data; name=\"email\"\r\n\r\n{}\r\n------XYZ\r\nContent-Disposition: form-data; name=\"modified_by\"\r\n\r\n{}\r\n------XYZ--\r\n",
         payload.username, payload.email, payload.modified_by
-    );
+    ).as_bytes().to_vec();
 
-    let token = get_user_token().await.to_string();
-    if token.is_empty() {
-        return Err(AppError::TokenCreation);
-    }
+    let response = request_with_auth_and_multipart(Method::POST, "/user", multipart_body);
 
-    let request = Request::builder()
-        .method("POST")
-        .uri("/users")
-        .header("Authorization", token)
-        .header("Content-Type", "multipart/form-data; boundary=----XYZ")
-        .body(Body::from(multipart_body))
-        .unwrap();
+    let (parts, body) = response.await.into_parts();
 
-    // Pass this request into your app/router to extract Multipart in the handler.
-    let config = Config::from_env().map_err(|_e| AppError::InternalError)?;
-
-    let app = create_router(state.unwrap().pool, config.clone());
-    let response = app.oneshot(request).await.unwrap();
-
-    // Print the response body for debugging
-    let (parts, body) = response.into_parts();
-    print_response(body).await;
-    // Check if the status code is OK
     assert_eq!(parts.status, StatusCode::OK);
 
-    Ok(())
+    let response_body: RestApiResponse<UserDto> = deserialize_json_body(body).await.unwrap();
+
+    assert_eq!(response_body.0.status, StatusCode::OK);
+    let user_dto = response_body.0.data.unwrap();
+
+    Ok((payload, user_dto))
 }
 
 #[tokio::test]
-async fn test_create_user_with_file() -> Result<(), AppError> {
-    let state = setup_test_db_state().await;
+async fn test_create_user() {
+    let created = create_user().await.expect("Failed to create user");
+
+    let payload = created.0;
+    let user_dto = created.1;
+
+    assert!(!user_dto.id.is_empty());
+    assert_eq!(user_dto.username, payload.username.clone());
+    assert_eq!(user_dto.email, Some(payload.email.clone()));
+    assert_ne!(user_dto.modified_by, Some(payload.modified_by.clone()));
+    assert_eq!(user_dto.origin_file_name, None);
+    assert!(user_dto.file_id.is_none());
+}
+
+async fn create_user_with_file() -> Result<(CreateUserMultipartDto, UserDto, String), AppError> {
+    let username = format!("testuser-{}", uuid::Uuid::new_v4()).to_string();
+    let email = format!("{}@test.com", username).to_string();
 
     let image_file = "cat.png";
 
-    let payload = CreateUserMultipart {
-        username: "testuser-12".to_string(),
-        email: "testuser-12@example.com".to_string(),
-        modified_by: "00000000-0000-0000-0000-000000000001".to_string(),
+    let payload = CreateUserMultipartDto {
+        username,
+        email,
+        modified_by: TEST_USER_ID.to_string(),
         // Indicate the file name being uploaded
         profile_picture: Some(image_file.to_string()),
     };
@@ -117,148 +111,180 @@ async fn test_create_user_with_file() -> Result<(), AppError> {
     // Add the final boundary
     write!(&mut multipart_body, "------XYZ--\r\n").unwrap();
 
-    let token = get_user_token().await.to_string();
-    if token.is_empty() {
-        return Err(AppError::TokenCreation);
-    }
+    let response = request_with_auth_and_multipart(Method::POST, "/user", multipart_body);
 
-    let request = Request::builder()
-        .method("POST")
-        .uri("/users")
-        .header("Authorization", token)
-        .header("Content-Type", "multipart/form-data; boundary=----XYZ")
-        .body(Body::from(multipart_body))
-        .unwrap();
+    let (parts, body) = response.await.into_parts();
 
-    // Pass the request into the app/router to let axum extract the multipart data
-    let config = Config::from_env().map_err(|_e| AppError::InternalError)?;
-    let app = create_router(state.unwrap().pool, config.clone());
-    let response = app.oneshot(request).await.unwrap();
-
-    // Print the response body for debugging
-    let (parts, body) = response.into_parts();
-    print_response(body).await;
-    // Check if the status code is OK
     assert_eq!(parts.status, StatusCode::OK);
 
-    Ok(())
+    let response_body: RestApiResponse<UserDto> = deserialize_json_body(body).await.unwrap();
+
+    assert_eq!(response_body.0.status, StatusCode::OK);
+    let user_dto = response_body.0.data.unwrap();
+
+    Ok((payload, user_dto, image_file.to_string()))
 }
 
 #[tokio::test]
-async fn test_get_users() -> Result<(), AppError> {
-    let state = setup_test_db_state().await;
+async fn test_create_user_with_file() {
+    let created = create_user_with_file()
+        .await
+        .expect("Failed to create user with file");
 
-    let response = get_users(State(state.unwrap())).await.into_response();
+    let payload = created.0;
+    let user_dto = created.1;
+    let image_file = created.2;
 
-    let (parts, body) = response.into_parts();
-    print_response(body).await;
+    assert!(!user_dto.id.is_empty());
+    assert_eq!(user_dto.username, payload.username.clone());
+    assert_eq!(user_dto.email, Some(payload.email.clone()));
+    assert_ne!(user_dto.modified_by, Some(payload.modified_by.clone()));
+    assert_eq!(user_dto.origin_file_name, Some(image_file.to_string()));
+    assert!(!user_dto.file_id.clone().unwrap_or_default().is_empty());
+}
+
+async fn get_users() -> Vec<UserDto> {
+    let response = request_with_auth(Method::GET, "/user");
+
+    let (parts, body) = response.await.into_parts();
+
     assert_eq!(parts.status, StatusCode::OK);
 
-    Ok(())
+    let response_body: RestApiResponse<Vec<UserDto>> = deserialize_json_body(body).await.unwrap();
+
+    assert_eq!(response_body.0.status, StatusCode::OK);
+    let user_dtos = response_body.0.data.unwrap();
+
+    user_dtos
 }
 
 #[tokio::test]
-async fn test_get_user_by_id() -> Result<(), AppError> {
-    let state = setup_test_db_state().await;
-    let existent_id = "92fcf9ce-186f-11f0-8475-0242ac110002";
-
-    let response = get_user_by_id(
-        State(state.unwrap()),
-        axum::extract::Path(existent_id.to_string()),
-    )
-    .await?
-    .into_response();
-
-    assert_eq!(response.status(), StatusCode::OK);
-
-    Ok(())
+async fn test_get_users() {
+    let user_dtos: Vec<UserDto> = get_users().await;
+    // println!("user_dtos: {:?}", user_dtos);
+    assert!(!user_dtos.is_empty());
 }
 
 #[tokio::test]
-async fn test_update_user() -> Result<(), AppError> {
-    let state = setup_test_db_state().await;
+async fn test_get_user_by_id() {
+    let users = get_users().await;
+    let existent_id = &users[0].id;
 
-    let update_payload = UpdateUser {
-        username: "updateduser-1".to_string(),
-        email: "updated-1@test.com".to_string(),
-        modified_by: "00000000-0000-0000-0000-000000000001".to_string(),
+    let url = format!("/user/{}", existent_id);
+    let response = request_with_auth(Method::GET, url.as_str());
+
+    let (parts, body) = response.await.into_parts();
+
+    assert_eq!(parts.status, StatusCode::OK);
+
+    let response_body: RestApiResponse<UserDto> = deserialize_json_body(body).await.unwrap();
+
+    assert_eq!(response_body.0.status, StatusCode::OK);
+    let user_dto = response_body.0.data.unwrap();
+
+    assert_eq!(user_dto.id, *existent_id);
+    assert_eq!(user_dto.username, users[0].username);
+    assert_eq!(user_dto.email, users[0].email);
+    assert_eq!(user_dto.created_by, users[0].created_by);
+    assert_eq!(user_dto.created_at, users[0].created_at);
+    assert_eq!(user_dto.modified_by, users[0].modified_by);
+    assert_eq!(user_dto.modified_at, users[0].modified_at);
+    assert_eq!(user_dto.file_id, users[0].file_id);
+    assert_eq!(user_dto.origin_file_name, users[0].origin_file_name);
+}
+
+#[tokio::test]
+async fn test_update_user() {
+    let users = get_users().await;
+    let existent_id = &users[0].id;
+
+    let username = format!("update-testuser-{}", uuid::Uuid::new_v4()).to_string();
+    let email = format!("{}@test.com", username).to_string();
+
+    let payload = UpdateUserDto {
+        username,
+        email,
+        modified_by: TEST_USER_ID.to_string(),
     };
 
-    let existent_id = "00000000-0000-0000-0000-000000000001";
+    let url = format!("/user/{}", existent_id);
 
-    let claims = Claims {
-        sub: "00000000-0000-0000-0000-000000000021".to_string(),
-        ..Default::default()
-    };
+    let response = request_with_auth_and_body(Method::PUT, url.as_str(), &payload);
 
-    let response = update_user(
-        State(state.unwrap()),
-        Extension(claims),
-        axum::extract::Path(existent_id.to_string()),
-        Json(update_payload),
-    )
-    .await?
-    .into_response();
+    let (parts, body) = response.await.into_parts();
 
-    let (parts, body) = response.into_parts();
-    print_response(body).await;
     assert_eq!(parts.status, StatusCode::OK);
 
-    Ok(())
+    let response_body: RestApiResponse<UserDto> = deserialize_json_body(body).await.unwrap();
+
+    assert_eq!(response_body.0.status, StatusCode::OK);
+    let user_dto = response_body.0.data.unwrap();
+
+    assert_eq!(user_dto.id, *existent_id);
+    assert_eq!(user_dto.username, payload.username);
+    assert_eq!(user_dto.email, Some(payload.email));
 }
 
 #[tokio::test]
-async fn test_delete_user_not_found() -> Result<(), AppError> {
-    let state = setup_test_db_state().await;
-
+async fn test_delete_user_not_found() {
     let non_existent_id = uuid::Uuid::new_v4();
-    let response = delete_user(
-        State(state.unwrap()),
-        axum::extract::Path(non_existent_id.to_string()),
-    )
-    .await?
-    .into_response();
 
-    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    let url = format!("/user/{}", non_existent_id);
+    let response = request_with_auth(Method::DELETE, url.as_str());
 
-    Ok(())
+    let (parts, body) = response.await.into_parts();
+
+    assert_eq!(parts.status, StatusCode::NOT_FOUND);
+
+    let response_body: RestApiResponse<()> = deserialize_json_body(body).await.unwrap();
+
+    assert_eq!(response_body.0.status, StatusCode::NOT_FOUND);
+    // println!("response_body.0.status: {:?}", response_body.0.status);
+    // println!("response_body.0.message: {:?}", response_body.0.message);
 }
 
 #[tokio::test]
-async fn test_delete_user() -> Result<(), AppError> {
-    let state = setup_test_db_state().await;
+async fn test_delete_user() {
+    let created = create_user()
+        .await
+        .expect("Failed to create user for deletion");
 
-    let existent_id = "464f9f1a-1730-11f0-8475-0242ac110002";
+    let user = created.1;
 
-    let response = delete_user(
-        State(state.unwrap()),
-        axum::extract::Path(existent_id.to_string()),
-    )
-    .await?
-    .into_response();
+    let url = format!("/user/{}", user.id);
 
-    assert_eq!(response.status(), StatusCode::OK);
+    let response = request_with_auth(Method::DELETE, url.as_str());
 
-    Ok(())
-}
+    let (parts, body) = response.await.into_parts();
 
-#[tokio::test]
-async fn test_delete_user_file() -> Result<(), AppError> {
-    let state = setup_test_db_state().await;
-
-    let existent_file_id = "f12f6300-18a9-11f0-8475-0242ac110002";
-
-    let response = delete_file(
-        State(state.unwrap()),
-        axum::extract::Path(existent_file_id.to_string()),
-    )
-    .await?
-    .into_response();
-
-    let (parts, body) = response.into_parts();
-
-    print_response(body).await;
     assert_eq!(parts.status, StatusCode::OK);
 
-    Ok(())
+    let response_body: RestApiResponse<()> = deserialize_json_body(body).await.unwrap();
+
+    assert_eq!(response_body.0.status, StatusCode::OK);
+    // println!("response_body.0.status: {:?}", response_body.0.status);
+    // println!("response_body.0.message: {:?}", response_body.0.message);
+}
+
+#[tokio::test]
+async fn test_delete_user_file() {
+    let created = create_user_with_file()
+        .await
+        .expect("Failed to create user with file for deletion");
+    let user_dto = created.1;
+    let file_id = user_dto.file_id.clone().unwrap_or_default();
+
+    let url = format!("/file/{}", file_id);
+
+    let response = request_with_auth(Method::DELETE, url.as_str());
+
+    let (parts, body) = response.await.into_parts();
+
+    assert_eq!(parts.status, StatusCode::OK);
+
+    let response_body: RestApiResponse<()> = deserialize_json_body(body).await.unwrap();
+
+    assert_eq!(response_body.0.status, StatusCode::OK);
+    // println!("response_body.0.status: {:?}", response_body.0.status);
+    // println!("response_body.0.message: {:?}", response_body.0.message);
 }

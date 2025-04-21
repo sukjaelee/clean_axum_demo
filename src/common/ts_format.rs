@@ -1,7 +1,9 @@
 use serde::{self, Deserialize, Deserializer, Serializer};
-use time::{format_description, OffsetDateTime};
+use time::{format_description, OffsetDateTime, PrimitiveDateTime};
 
-// Define the desired time format.
+/// This module provides serialization and deserialization functions for `OffsetDateTime`
+/// using a specific format. The format is defined as a constant string.
+/// Define the desired time format.
 const FORMAT: &str = "[year]-[month]-[day] [hour]:[minute]:[second]";
 
 // OffsetDateTime
@@ -21,7 +23,9 @@ where
 {
     let s = String::deserialize(deserializer)?;
     let format = format_description::parse(FORMAT).map_err(serde::de::Error::custom)?;
-    OffsetDateTime::parse(&s, &format).map_err(serde::de::Error::custom)
+    PrimitiveDateTime::parse(&s, &format)
+        .map(|dt| dt.assume_utc())
+        .map_err(serde::de::Error::custom)
 }
 
 // support for Option<OffsetDateTime>
@@ -45,8 +49,8 @@ pub mod option {
         match opt {
             Some(s) => {
                 let format = format_description::parse(FORMAT).map_err(serde::de::Error::custom)?;
-                OffsetDateTime::parse(&s, &format)
-                    .map(Some)
+                PrimitiveDateTime::parse(&s, &format)
+                    .map(|dt| Some(dt.assume_utc()))
                     .map_err(serde::de::Error::custom)
             }
             None => Ok(None),

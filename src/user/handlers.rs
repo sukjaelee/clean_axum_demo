@@ -1,106 +1,51 @@
-use super::{
-    dto::{CreateUserMultipart, UpdateUser},
-    model::User,
-};
+use super::dto::{CreateUserMultipartDto, UpdateUserDto, UserDto};
+
 use crate::{
-    file::handlers::process_profile_picture_upload,
-    shared::{app_state::AppState, error::AppError, jwt::Claims},
+    common::{app_state::AppState, dto::RestApiResponse, error::AppError, jwt::Claims},
+    file::dto::UpdateFile,
 };
 use axum::{
     extract::{Multipart, State},
     response::IntoResponse,
     Extension, Json,
 };
-use serde_json::json;
-use utoipa::{
-    openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
-    OpenApi,
-};
+
 use validator::Validate;
-
-#[derive(OpenApi)]
-#[openapi(
-    paths(
-        get_user_by_id,
-        get_users,
-        create_user,
-        update_user,
-        delete_user,
-    ),
-    components(schemas(User, CreateUserMultipart, UpdateUser)),
-    tags(
-        (name = "Users", description = "User management endpoints")
-    ),
-    security(
-        ("bearer_auth" = [])
-    ),
-    modifiers(&UserApiDoc)
-)]
-
-/// This struct is used to generate OpenAPI documentation for the user routes.
-pub struct UserApiDoc;
-
-impl utoipa::Modify for UserApiDoc {
-    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
-        let components = openapi.components.as_mut().unwrap();
-        components.add_security_scheme(
-            "bearer_auth",
-            SecurityScheme::Http(
-                HttpBuilder::new()
-                    .scheme(HttpAuthScheme::Bearer)
-                    .bearer_format("JWT")
-                    .description(Some("Input your `<your‑jwt>`"))
-                    .build(),
-            ),
-        )
-    }
-}
 
 #[utoipa::path(
     get,
-    path = "/users/{id}",
-    responses((status = 200, description = "Get user by ID", body = User)),
+    path = "/user/{id}",
+    responses((status = 200, description = "Get user by ID", body = UserDto)),
     tag = "Users"
 )]
 pub async fn get_user_by_id(
     State(state): State<AppState>,
     axum::extract::Path(id): axum::extract::Path<String>,
 ) -> Result<impl IntoResponse, AppError> {
-    match state.user_repo.find_by_id(state.pool, id).await {
-        Ok(Some(user)) => Ok(Json(json!({ "user": user })).into_response()),
-        Ok(None) => Ok((AppError::NotFound("User not found".into())).into_response()),
-        Err(err) => {
-            tracing::error!("Error retrieving user: {err}");
-            Err(AppError::DatabaseError(err))
-        }
-    }
+    let user = state.user_service.get_user_by_id(id).await?;
+    Ok(RestApiResponse::success(user))
 }
 
 #[utoipa::path(
     get,
-    path = "/users",
-    responses((status = 200, description = "List all users", body = [User])),
+    path = "/user",
+    responses((status = 200, description = "List all users", body = [UserDto])),
     tag = "Users"
 )]
 pub async fn get_users(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
-    match state.user_repo.find_all(state.pool).await {
-        Ok(users) => Ok(Json(json!({ "users": users })).into_response()),
-        Err(err) => {
-            tracing::error!("Error fetching users: {err}");
-            Err(AppError::DatabaseError(err))
-        }
-    }
+    let users = state.user_service.get_users().await?;
+    Ok(RestApiResponse::success(users))
 }
 
 #[utoipa::path(
     post,
-    path = "/users",
+    path = "/user",
     request_body(
-        content = CreateUserMultipart,
+        content = CreateUserMultipartDto,
         content_type = "multipart/form-data",
         description = "User creation with optional profile picture upload"
     ),
-    responses((status = 200, description = "Create a new user", body = User)),
+    responses((status = 200, description = "Create a new user", body = UserDto)),
     tag = "Users"
 )]
 pub async fn create_user(
@@ -148,10 +93,8 @@ pub async fn create_user(
     let email = email.ok_or(AppError::ValidationError("Missing email".into()))?;
     let modified_by = claims.sub.clone().to_string();
 
-    let mut tx = state.pool.begin().await?;
-
     // Prepare the CreateUser DTO.
-    let create_user_dto = CreateUserMultipart {
+    let create_user = CreateUserMultipartDto {
         username,
         email,
         modified_by: modified_by.clone(),
@@ -159,19 +102,11 @@ pub async fn create_user(
     };
 
     // Validate the CreateUser DTO.
-    create_user_dto
+    create_user
         .validate()
         .map_err(|err| AppError::ValidationError(format!("Invalid input: {}", err)))?;
 
-    // Create the user record.
-    let user_id = match state.user_repo.create(&mut tx, create_user_dto).await {
-        Ok(user_id) => user_id,
-        Err(err) => {
-            tracing::error!("Error creating user: {err}");
-            tx.rollback().await?; // Rollback the transaction
-            return Err(AppError::DatabaseError(err));
-        }
-    };
+    let mut upload_file = None;
 
     // If a profile picture was uploaded, handle it.
     if let (Some(data), Some(filename), Some(content_type)) = (
@@ -179,45 +114,36 @@ pub async fn create_user(
         profile_picture_filename,
         profile_picture_content_type,
     ) {
-        process_profile_picture_upload(
+        upload_file = Some(UpdateFile {
+            user_id: None,
+            original_filename: filename,
             data,
-            filename,
-            content_type,
-            user_id.clone(),
-            modified_by.clone(),
-            &state,
-            &mut tx,
-        )
+            content_type: content_type.clone(),
+            modified_by: modified_by.clone(),
+        });
+    }
+
+    let user = state
+        .user_service
+        .create_user(create_user, upload_file.as_mut())
         .await?;
-    }
 
-    tx.commit().await?;
-
-    match state.user_repo.find_by_id(state.pool, user_id).await {
-        Ok(Some(user)) => Ok(Json(json!({ "user": user })).into_response()),
-        Ok(None) => Ok((AppError::NotFound("User not found".into())).into_response()),
-        Err(err) => {
-            tracing::error!("Error retrieving user: {err}");
-            Err(AppError::DatabaseError(err))
-        }
-    }
+    Ok(RestApiResponse::success(user))
 }
 
 #[utoipa::path(
     put,
-    path = "/users/{id}",
-    request_body = UpdateUser,
-    responses((status = 200, description = "Update user", body = User)),
+    path = "/user/{id}",
+    request_body = UpdateUserDto,
+    responses((status = 200, description = "Update user", body = UserDto)),
     tag = "Users"
 )]
 pub async fn update_user(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
     axum::extract::Path(id): axum::extract::Path<String>,
-    Json(payload): Json<UpdateUser>,
+    Json(payload): Json<UpdateUserDto>,
 ) -> Result<impl IntoResponse, AppError> {
-    let mut tx = state.pool.begin().await?;
-
     payload.validate().map_err(|err| {
         tracing::error!("Validation error: {err}");
         AppError::ValidationError(format!("Invalid input: {}", err))
@@ -227,30 +153,13 @@ pub async fn update_user(
     let mut payload = payload;
     payload.modified_by = claims.sub.clone().to_string();
 
-    match state
-        .user_repo
-        .update(&mut tx, id.to_string(), payload)
-        .await
-    {
-        Ok(Some(user)) => {
-            tx.commit().await?; // Commit the transaction
-            Ok(Json(json!({ "user": user })).into_response())
-        }
-        Ok(None) => {
-            tx.rollback().await?; // Rollback the transaction
-            Ok((AppError::NotFound("User not found".into())).into_response())
-        }
-        Err(err) => {
-            tracing::error!("Error updating user: {err}");
-            tx.rollback().await?; // Rollback the transaction
-            Err(AppError::DatabaseError(err))
-        }
-    }
+    let user = state.user_service.update_user(id, payload).await?;
+    Ok(RestApiResponse::success(user))
 }
 
 #[utoipa::path(
     delete,
-    path = "/users/{id}",
+    path = "/user/{id}",
     responses((status = 200, description = "User deleted")),
     tag = "Users"
 )]
@@ -258,21 +167,6 @@ pub async fn delete_user(
     State(state): State<AppState>,
     axum::extract::Path(id): axum::extract::Path<String>,
 ) -> Result<impl IntoResponse, AppError> {
-    let mut tx = state.pool.begin().await?;
-
-    match state.user_repo.delete(&mut tx, id.to_string()).await {
-        Ok(true) => {
-            tx.commit().await?; // Commit the transaction
-            Ok((axum::http::StatusCode::OK, "User deleted").into_response())
-        }
-        Ok(false) => {
-            tx.rollback().await?; // Rollback the transaction
-            Ok((AppError::NotFound("User not found".into())).into_response())
-        }
-        Err(err) => {
-            tracing::error!("Error deleting user: {err}");
-            tx.rollback().await?; // Rollback the transaction
-            Err(AppError::DatabaseError(err))
-        }
-    }
+    let message = state.user_service.delete_user(id).await?;
+    Ok(RestApiResponse::success_with_message(message, ()))
 }

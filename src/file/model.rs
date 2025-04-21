@@ -43,7 +43,7 @@ impl From<String> for FileType {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone)]
 pub struct UploadedFile {
     pub id: String,
     pub user_id: String,
@@ -55,9 +55,7 @@ pub struct UploadedFile {
     pub file_size: u32,
     pub file_type: FileType,
     pub created_by: Option<String>,
-    #[serde(with = "crate::shared::ts_format::option")]
     pub created_at: Option<OffsetDateTime>,
     pub modified_by: Option<String>,
-    #[serde(with = "crate::shared::ts_format::option")]
     pub modified_at: Option<OffsetDateTime>,
 }

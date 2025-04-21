@@ -1,25 +1,55 @@
+use std::sync::Once;
+
 use axum::{
-    body::{Body, Bytes},
-    extract::State,
-    http::StatusCode,
-    response::IntoResponse,
-    Json,
+    body::Body,
+    http::{
+        header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
+        Method, Request, Response, StatusCode,
+    },
+    Router,
 };
+
+use dotenv::from_filename;
 use http_body_util::BodyExt;
 
 use clean_axum_demo::{
-    auth::handlers::login_user,
-    shared::{
-        app_state::AppState,
+    app::create_router,
+    common::{
         config::Config,
+        dto::RestApiResponse,
         jwt::{AuthBody, AuthPayload},
     },
 };
-use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
+use sqlx::{
+    mysql::{MySqlConnectOptions, MySqlPoolOptions},
+    MySql, Pool,
+};
+use tower::ServiceExt;
 
 use std::str::FromStr;
 
-pub async fn setup_test_db_state() -> Result<AppState, Box<dyn std::error::Error>> {
+static INIT: Once = Once::new();
+
+/// Constants for test client credentials
+/// These are used to authenticate the test client
+#[allow(dead_code)]
+pub const TEST_CLIENT_ID: &str = "apitest01";
+#[allow(dead_code)]
+pub const TEST_CLIENT_SECRET: &str = "test_password";
+
+#[allow(dead_code)]
+pub const TEST_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
+
+/// Helper function to load environment variables from .env.test file
+fn load_test_env() {
+    INIT.call_once(|| {
+        from_filename(".env.test").expect("Failed to load .env.test");
+    });
+}
+
+//// Helper function to set up the test database state
+pub async fn setup_test_db() -> Result<Pool<MySql>, Box<dyn std::error::Error>> {
+    load_test_env();
     let config = Config::from_env()?;
 
     // Create connection options
@@ -46,78 +76,200 @@ pub async fn setup_test_db_state() -> Result<AppState, Box<dyn std::error::Error
         .await
         .expect("Failed to set timezone");
 
-    Ok(AppState::new(pool, config.clone()))
+    Ok(pool)
 }
 
+/// Helper function to create a test router
+pub async fn create_test_router() -> Router {
+    let pool = setup_test_db().await.unwrap();
+    let config = Config::from_env().unwrap();
+    create_router(pool.clone(), config)
+}
+
+/// Helper function gets the authentication token
+/// for the test client
+/// This function is used to authenticate the test client
 #[allow(dead_code)]
-pub async fn print_response(body: Body) {
-    buffer_and_print("response", body).await;
-}
-
-async fn buffer_and_print<B>(direction: &str, body: B)
-where
-    B: axum::body::HttpBody<Data = Bytes>,
-    B::Error: std::fmt::Display,
-{
-    let bytes = match body.collect().await {
-        Ok(collected) => collected.to_bytes(),
-        Err(err) => {
-            tracing::error!("failed to read {direction} body: {err}");
-            return;
-        }
-    };
-
-    if let Ok(body) = std::str::from_utf8(&bytes) {
-        println!("{direction} body = {body:?}");
-    }
-}
-
-#[allow(dead_code)]
-pub async fn get_user_token() -> String {
-    let state = setup_test_db_state().await;
-
+async fn get_authentication_token() -> String {
     let payload = AuthPayload {
-        client_id: "apitest01".to_string(),
-        client_secret: "test_password".to_string(),
+        client_id: TEST_CLIENT_ID.to_string(),
+        client_secret: TEST_CLIENT_SECRET.to_string(),
     };
 
-    let response = match login_user(State(state.unwrap()), Json(payload)).await {
-        Ok(resp) => resp.into_response(),
-        Err(err) => {
-            println!("Failed to login user: {:?}", err);
-            return "".to_string();
-        }
-    };
+    let response = request_with_body(Method::POST, "/auth/login", &payload);
 
-    let (parts, body) = response.into_parts();
+    let (parts, body) = response.await.into_parts();
 
-    if parts.status != StatusCode::OK {
-        println!("Failed to get token, status: {:?}", parts.status);
-        return "".to_string();
-    }
+    assert_eq!(parts.status, StatusCode::OK);
 
-    let body_string = get_body_string(body).await;
-    let auth_body: AuthBody = serde_json::from_str(&body_string).unwrap();
-
-    format!("{} {}", auth_body.token_type, auth_body.access_token)
+    let response_body: RestApiResponse<AuthBody> = deserialize_json_body(body).await.unwrap();
+    let auth_body = response_body.0.data.unwrap();
+    let token = format!("{} {}", auth_body.token_type, auth_body.access_token);
+    token
 }
 
-async fn get_body_string<B>(body: B) -> String
-where
-    B: axum::body::HttpBody<Data = Bytes>,
-    B::Error: std::fmt::Display,
-{
-    let bytes = match body.collect().await {
-        Ok(collected) => collected.to_bytes(),
-        Err(err) => {
-            tracing::error!("failed to read body: {err}");
-            return "".to_string();
-        }
-    };
+/// Helper function to deserialize the body of a request into a specific type
+pub async fn deserialize_json_body<T: serde::de::DeserializeOwned>(
+    body: Body,
+) -> Result<T, Box<dyn std::error::Error>> {
+    let bytes = body
+        .collect()
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to collect response body: {}", e);
+            e
+        })?
+        .to_bytes();
 
-    if let Ok(body) = std::str::from_utf8(&bytes) {
-        return body.to_string();
-    } else {
-        return "".to_string();
+    if bytes.is_empty() {
+        return Err(("Empty response body").into());
     }
+
+    // Debugging output
+    // Uncomment the following lines to print the response body
+    // if let Ok(body) = std::str::from_utf8(&bytes) {
+    //     println!("body = {body:?}");
+    // }
+
+    let parsed = serde_json::from_slice::<T>(&bytes)?;
+
+    Ok(parsed)
+}
+
+/// Helper functions to create a request
+#[allow(dead_code)]
+pub async fn request(method: Method, uri: &str) -> Response<Body> {
+    let request = get_request(method, uri);
+    let app = create_test_router().await;
+    let response = app.oneshot(request.await).await.unwrap();
+    response
+}
+
+/// Helper function to create a request with a body
+#[allow(dead_code)]
+pub async fn request_with_body<T: serde::Serialize>(
+    method: Method,
+    uri: &str,
+    payload: &T,
+) -> Response<Body> {
+    let json_payload = serde_json::to_string(payload).expect("Failed to serialize payload");
+    let request = get_request_with_body(method, uri, &json_payload);
+    let app = create_test_router().await;
+    let response = app.oneshot(request.await).await.unwrap();
+    response
+}
+
+/// Helper function to create a request with authentication
+#[allow(dead_code)]
+pub async fn request_with_auth(method: Method, uri: &str) -> Response<Body> {
+    let token = get_authentication_token().await;
+    let request = get_request_with_auth(method, uri, &token);
+    let app = create_test_router().await;
+    let response = app.oneshot(request.await).await.unwrap();
+    response
+}
+
+/// Helper function to create a request with authentication and a body
+#[allow(dead_code)]
+pub async fn request_with_auth_and_body<T: serde::Serialize>(
+    method: Method,
+    uri: &str,
+    payload: &T,
+) -> Response<Body> {
+    let json_payload = serde_json::to_string(payload).expect("Failed to serialize payload");
+    let token = get_authentication_token().await;
+    let request = get_request_with_auth_and_body(method, uri, &token, &json_payload);
+    let app = create_test_router().await;
+    let response = app.oneshot(request.await).await.unwrap();
+    response
+}
+
+/// Helper function to create a request with authentication and multipart data
+#[allow(dead_code)]
+pub async fn request_with_auth_and_multipart(
+    method: Method,
+    uri: &str,
+    payload: Vec<u8>,
+) -> Response<Body> {
+    let token = get_authentication_token().await;
+    let request = get_request_with_auth_and_multipart(method, uri, &token, payload);
+    let app = create_test_router().await;
+    let response = app.oneshot(request.await).await.unwrap();
+    response
+}
+
+/// internal helper functions to create requests
+async fn get_request(method: Method, uri: &str) -> Request<Body> {
+    let request = Request::builder()
+        .method(method)
+        .uri(uri.to_string())
+        .header(CONTENT_TYPE, "application/json")
+        .header(ACCEPT, "application/json")
+        .body(axum::body::Body::empty())
+        .unwrap();
+
+    request
+}
+
+/// internal helper function to create a request with a body
+async fn get_request_with_body(method: Method, uri: &str, payload: &str) -> Request<Body> {
+    let request: Request<Body> = Request::builder()
+        .method(method)
+        .uri(uri.to_string())
+        .header(CONTENT_TYPE, "application/json")
+        .header(ACCEPT, "application/json")
+        .body(axum::body::Body::from(payload.to_string()))
+        .unwrap();
+
+    request
+}
+
+/// internal helper function to create a request with authorization
+async fn get_request_with_auth(method: Method, uri: &str, token: &str) -> Request<Body> {
+    let request = Request::builder()
+        .method(method)
+        .uri(uri.to_string())
+        .header(CONTENT_TYPE, "application/json")
+        .header(AUTHORIZATION, token)
+        .header(ACCEPT, "application/json")
+        .body(axum::body::Body::empty())
+        .unwrap();
+
+    request
+}
+
+async fn get_request_with_auth_and_body(
+    method: Method,
+    uri: &str,
+    token: &str,
+    payload: &str,
+) -> Request<Body> {
+    let request = Request::builder()
+        .method(method)
+        .uri(uri.to_string())
+        .header(CONTENT_TYPE, "application/json")
+        .header(AUTHORIZATION, token)
+        .header(ACCEPT, "application/json")
+        .body(axum::body::Body::from(payload.to_string()))
+        .unwrap();
+
+    request
+}
+
+async fn get_request_with_auth_and_multipart(
+    method: Method,
+    uri: &str,
+    token: &str,
+    payload: Vec<u8>,
+) -> Request<Body> {
+    let request = Request::builder()
+        .method(method)
+        .uri(uri.to_string())
+        .header(CONTENT_TYPE, "multipart/form-data; boundary=----XYZ")
+        .header(AUTHORIZATION, token)
+        .header(ACCEPT, "application/json")
+        .body(Body::from(payload))
+        .unwrap();
+
+    request
 }

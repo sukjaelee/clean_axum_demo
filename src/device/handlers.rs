@@ -1,162 +1,95 @@
 use super::dto::*;
-use super::model::*;
-use crate::shared::{app_state::AppState, error::AppError, jwt::Claims};
+
+use crate::common::dto::RestApiResponse;
+use crate::common::{app_state::AppState, error::AppError, jwt::Claims};
 use axum::{
     extract::{Path, State},
     response::IntoResponse,
     Extension, Json,
 };
-use serde_json::json;
-use utoipa::{
-    openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
-    OpenApi,
-};
 
-#[derive(OpenApi)]
-#[openapi(
-    paths(
-        get_device_by_id,
-        get_devices,
-        create_device,
-        update_device,
-        update_many_devices,
-        delete_device,
-    ),
-    components(schemas(Device, CreateDevice, UpdateDevice)),
-    tags(
-        (name = "Devices", description = "Device management endpoints")
-    ),
-    security(
-        ("bearer_auth" = [])
-    ),
-    modifiers(&DeviceApiDoc)
-)]
-
-/// This struct is used to generate OpenAPI documentation for the device routes.
-pub struct DeviceApiDoc;
-
-impl utoipa::Modify for DeviceApiDoc {
-    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
-        let components = openapi.components.as_mut().unwrap();
-        components.add_security_scheme(
-            "bearer_auth",
-            SecurityScheme::Http(
-                HttpBuilder::new()
-                    .scheme(HttpAuthScheme::Bearer)
-                    .bearer_format("JWT")
-                    .description(Some("Input your `<your‑jwt>`"))
-                    .build(),
-            ),
-        )
-    }
-}
-
+/// This function creates a router for getting a device by ID
+/// It will return a device if found, otherwise it will return an error
 #[utoipa::path(
     get,
-    path = "/devices/{id}",
-    responses((status = 200, description = "Get device by ID", body = Device)),
+    path = "/device/{id}",
+    responses((status = 200, description = "Get device by ID", body = DeviceDto)),
     tag = "Devices"
 )]
 pub async fn get_device_by_id(
     State(state): State<AppState>,
     axum::extract::Path(id): axum::extract::Path<String>,
 ) -> Result<impl IntoResponse, AppError> {
-    match state.device_repo.find_by_id(state.pool, id).await {
-        Ok(Some(device)) => Ok(Json(json!({ "device": device })).into_response()),
-        Ok(None) => Ok((AppError::NotFound("Device not found".into())).into_response()),
-        Err(err) => {
-            tracing::error!("Error fetching device: {err}");
-            Err(AppError::DatabaseError(err))
-        }
-    }
+    let device = state.device_service.get_device_by_id(id).await?;
+    Ok(RestApiResponse::success(device))
 }
 
+/// This function creates a router for getting all devices
+/// It will return a list of devices
 #[utoipa::path(
     get,
-    path = "/devices",
-    responses((status = 200, description = "List all devices", body = [Device])),
+    path = "/device",
+    responses((status = 200, description = "List all devices", body = [DeviceDto])),
     tag = "Devices"
 )]
 pub async fn get_devices(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
-    match state.device_repo.find_all(state.pool).await {
-        Ok(devices) => Ok(Json(json!({ "devices": devices })).into_response()),
-        Err(err) => {
-            tracing::error!("Error fetching devices: {err}");
-            Err(AppError::DatabaseError(err))
-        }
-    }
+    let devices = state.device_service.get_devices().await?;
+    Ok(RestApiResponse::success(devices))
 }
 
+/// This function creates a router for creating a new device
+/// It will create a new device in the database
+/// It will return the created device
 #[utoipa::path(
     post,
-    path = "/devices",
-    request_body = CreateDevice,
-    responses((status = 200, description = "Create a new device", body = Device)),
+    path = "/device",
+    request_body = CreateDeviceDto,
+    responses((status = 200, description = "Create a new device", body = DeviceDto)),
     tag = "Devices"
 )]
 pub async fn create_device(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
-    Json(payload): Json<CreateDevice>,
+    Json(payload): Json<CreateDeviceDto>,
 ) -> Result<impl IntoResponse, AppError> {
-    let mut tx = state.pool.begin().await?;
-
     // Set the modified_by field to the current user's ID.
     let mut payload = payload;
     payload.modified_by = claims.sub.clone().to_string();
 
-    match state.device_repo.create(&mut tx, payload).await {
-        Ok(device) => {
-            tx.commit().await?; // Commit the transaction
-            Ok(Json(json!({ "device": device })).into_response())
-        }
-        Err(err) => {
-            tracing::error!("Error creating device: {err}");
-            tx.rollback().await?; // Rollback the transaction
-            Err(AppError::DatabaseError(err))
-        }
-    }
+    let device = state.device_service.create_device(payload).await?;
+    Ok(RestApiResponse::success(device))
 }
 
+/// This function creates a router for updating a device
+/// It will update the device in the database
+/// It will return the updated device
 #[utoipa::path(
     put,
-    path = "/devices/{id}",
-    request_body = UpdateDevice,
-    responses((status = 200, description = "Update device", body = Device)),
+    path = "/device/{id}",
+    request_body = UpdateDeviceDto,
+    responses((status = 200, description = "Update device", body = DeviceDto)),
     tag = "Devices"
 )]
 pub async fn update_device(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
     axum::extract::Path(id): axum::extract::Path<String>,
-    Json(payload): Json<UpdateDevice>,
+    Json(payload): Json<UpdateDeviceDto>,
 ) -> Result<impl IntoResponse, AppError> {
-    let mut tx = state.pool.begin().await?;
-
     // Set the modified_by field to the current user's ID.
     let mut payload = payload;
     payload.modified_by = claims.sub.clone().to_string();
 
-    match state.device_repo.update(&mut tx, id, payload).await {
-        Ok(Some(device)) => {
-            tx.commit().await?; // Commit the transaction
-            Ok(Json(json!({ "device": device })).into_response())
-        }
-        Ok(None) => {
-            tx.rollback().await?; // Rollback the transaction
-            Ok((AppError::NotFound("Device not found".into())).into_response())
-        }
-        Err(err) => {
-            tracing::error!("Error updating device: {err}");
-            tx.rollback().await?; // Rollback the transaction
-            Err(AppError::DatabaseError(err))
-        }
-    }
+    let device = state.device_service.update_device(id, payload).await?;
+    Ok(RestApiResponse::success(device))
 }
 
+/// This function creates a router for deleting a device
+/// It will delete the device from the database
+/// It will return a message indicating the result of the operation
 #[utoipa::path(
     delete,
-    path = "/devices/{id}",
+    path = "/device/{id}",
     responses((status = 200, description = "Device deleted")),
     tag = "Devices"
 )]
@@ -164,29 +97,18 @@ pub async fn delete_device(
     State(state): State<AppState>,
     axum::extract::Path(id): axum::extract::Path<String>,
 ) -> Result<impl IntoResponse, AppError> {
-    let mut tx = state.pool.begin().await?;
+    let message = state.device_service.delete_device(id).await?;
 
-    match state.device_repo.delete(&mut tx, id).await {
-        Ok(true) => {
-            tx.commit().await?; // Commit the transaction
-            Ok((axum::http::StatusCode::OK, "Device deleted").into_response())
-        }
-        Ok(false) => {
-            tx.rollback().await?; // Rollback the transaction
-            Ok((AppError::NotFound("Device not found".into())).into_response())
-        }
-        Err(err) => {
-            tracing::error!("Error deleting device: {err}");
-            tx.rollback().await?; // Rollback the transaction
-            Err(AppError::DatabaseError(err))
-        }
-    }
+    Ok(RestApiResponse::success_with_message(message, ()))
 }
 
+/// This function creates a router for batch updating devices
+/// It will update multiple devices in the database
+/// It will return a message indicating the result of the operation
 #[utoipa::path(
     put,
-    path = "/devices/batch/{user_id}",
-    request_body = UpdateManyDevices,
+    path = "/device/batch/{user_id}",
+    request_body = UpdateManyDevicesDto,
     responses((status = 200, description = "Batch update devices")),
     tag = "Devices"
 )]
@@ -194,25 +116,14 @@ pub async fn update_many_devices(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
     Path(user_id): Path<String>,
-    Json(payload): Json<UpdateManyDevices>,
+    Json(payload): Json<UpdateManyDevicesDto>,
 ) -> Result<impl IntoResponse, AppError> {
-    let mut tx = state.pool.begin().await?;
-
     let modified_by = claims.sub.clone().to_string();
 
-    match state
-        .device_repo
-        .update_many(&mut tx, user_id, modified_by, payload)
-        .await
-    {
-        Ok(()) => {
-            tx.commit().await?; // Commit the transaction
-            Ok((axum::http::StatusCode::OK, "Devices updated").into_response())
-        }
-        Err(err) => {
-            tracing::error!("Error creating device: {err}");
-            tx.rollback().await?; // Rollback the transaction
-            Err(AppError::DatabaseError(err))
-        }
-    }
+    let message = state
+        .device_service
+        .update_many_devices(user_id, modified_by, payload)
+        .await?;
+
+    Ok(RestApiResponse::success_with_message(message, ()))
 }

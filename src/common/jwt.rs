@@ -13,6 +13,9 @@ use utoipa::ToSchema;
 
 use super::error::AppError;
 
+/// JWT_SECRET_KEY is the environment variable that holds the secret key for JWT encoding and decoding.
+/// It is loaded from the environment variables using the dotenv crate.
+/// The secret key is used to sign the JWT tokens and should be kept secret.
 pub static KEYS: LazyLock<Keys> = LazyLock::new(|| {
     dotenv::dotenv().ok();
 
@@ -20,11 +23,13 @@ pub static KEYS: LazyLock<Keys> = LazyLock::new(|| {
     Keys::new(secret.as_bytes())
 });
 
+/// Keys is a struct that holds the encoding and decoding keys for JWT.
 pub struct Keys {
     pub encoding: EncodingKey,
     pub decoding: DecodingKey,
 }
 
+/// The Keys struct is used to create the encoding and decoding keys for JWT.
 impl Keys {
     fn new(secret: &[u8]) -> Self {
         Self {
@@ -34,6 +39,10 @@ impl Keys {
     }
 }
 
+/// Claims is a struct that represents the claims in the JWT token.
+/// It contains the subject (user ID), expiration time, and issued at time.
+/// The `sub` field is the user ID, `exp` is the expiration time, and `iat` is the issued at time.
+/// The `Claims` struct is used to encode and decode the JWT tokens.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String,
@@ -41,12 +50,16 @@ pub struct Claims {
     pub iat: usize,
 }
 
+/// The Claims struct implements the `Display` trait for easy printing.
+/// It formats the claims as a string, showing the user ID.
 impl Display for Claims {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "user_id: {}", self.sub)
     }
 }
 
+/// The Default trait is implemented for the Claims struct.
+/// It sets the default values for the claims.
 impl Default for Claims {
     fn default() -> Self {
         let now = Utc::now();
@@ -61,12 +74,15 @@ impl Default for Claims {
     }
 }
 
+/// AuthBody is a struct that represents the authentication body.
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct AuthBody {
     pub access_token: String,
     pub token_type: String,
 }
 
+/// The AuthBody struct is used to create a new instance of the authentication body.
+/// It takes an access token as a parameter and sets the token type to "Bearer".
 impl AuthBody {
     pub fn new(access_token: String) -> Self {
         Self {
@@ -76,12 +92,16 @@ impl AuthBody {
     }
 }
 
+/// AuthPayload is a struct that represents the authentication payload.
+/// It contains the client ID and client secret.
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct AuthPayload {
     pub client_id: String,
     pub client_secret: String,
 }
 
+/// make_jwt_token is a function that creates a JWT token.
+/// It takes a user ID as a parameter and returns a Result with the JWT token or an error.
 pub fn make_jwt_token(user_id: &str) -> Result<String, AppError> {
     let claims = Claims {
         sub: user_id.to_string(),
