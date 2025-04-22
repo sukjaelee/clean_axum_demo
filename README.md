@@ -46,13 +46,7 @@ docker-compose down --rmi all
    mysql -u <user> -p <database> < 02-seed.sql
    ```
 
-2. **Configure environment**  
-   Copy `.env` templates and edit:
-
-   ```bash
-   cp .env.example .env
-   cp .env.example .env.test
-   ```
+2. **Configure environment**
 
    Update `.env` with:
 
