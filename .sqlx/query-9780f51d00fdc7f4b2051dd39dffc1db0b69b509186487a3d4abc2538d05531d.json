@@ -1,0 +1,34 @@
+{
+  "db_name": "MySQL",
+  "query": "SELECT ua.user_id, ua.password_hash \n                 FROM user_auth ua\n                 JOIN users u ON ua.user_id = u.id\n                 WHERE u.username = ?",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": {
+          "type": "String",
+          "flags": "NOT_NULL | PRIMARY_KEY | NO_DEFAULT_VALUE",
+          "max_size": 144
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "password_hash",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "9780f51d00fdc7f4b2051dd39dffc1db0b69b509186487a3d4abc2538d05531d"
+}

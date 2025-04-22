@@ -19,7 +19,7 @@ INSERT INTO users (id, username, email, created_by, created_at, modified_by, mod
   ('00000000-0000-0000-0000-000000000017', 'user17', 'user17@example.com', NULL, NOW(), NULL, NOW()),
   ('00000000-0000-0000-0000-000000000018', 'user18', 'user18@example.com', NULL, NOW(), NULL, NOW()),
   ('00000000-0000-0000-0000-000000000019', 'user19', 'user19@example.com', NULL, NOW(), NULL, NOW()),
-  ('00000000-0000-0000-0000-000000000020', 'user20', 'user20@example.com', NULL, NOW(), NULL, NOW());
+  ('00000000-0000-0000-0000-000000000020', 'user20', 'user20@example.com', NULL, NOW(), NULL, NOW()),
   ('00000000-0000-0000-0000-000000000021', 'apitest01', 'apitest01@example.com', NULL, NOW(), NULL, NOW());
 
 -- Seed data for devices

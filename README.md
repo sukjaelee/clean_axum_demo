@@ -19,56 +19,67 @@ This document outlines a Rust API Server Sample Demo using Axum and SQLx. It int
 
 - Rust (latest stable)
 - MySQL or MariaDB
-- (Optional) Docker and Docker Compose
+- Docker and Docker Compose (optional, for containerized setup)
 
-1. Create database tables:
+#### Using Docker Compose
 
-   - Navigate to the `db-seed` directory and execute the SQL scripts in order:
+You can use Docker Compose to build and run the application and its dependencies:
 
-     ```bash
-     cd db-seed
-     mysql -u <user> -p <database> < tables.sql
-     mysql -u <user> -p <database> < seed.sql
-     ```
+```bash
+docker-compose up --build
+```
 
-2. Create and configure environment files:
+To stop the services and remove containers, networks, and images:
 
-   - Copy the `.env` and `.env.test` templates or create your own:
+```bash
+docker-compose down --rmi all
+```
 
-     ```bash
-     cp .env.example .env
-     cp .env.example .env.test
-     ```
+#### Not Using Docker Compose
 
-   - Edit the `.env` file to match your database and JWT configuration.
+1. **Create database tables**  
+   Navigate to the `db-seed` directory and execute the SQL scripts in order:
 
-     Example `.env`:
+   ```bash
+   cd db-seed
+   mysql -u <user> -p <database> < 01-tables.sql
+   mysql -u <user> -p <database> < 02-seed.sql
+   ```
 
-     ```env
-     DATABASE_URL=mysql://user:password@localhost/clean_axum_demo
-     JWT_SECRET_KEY=your_super_secret_key
-     SERVICE_PORT=8080
-     ```
+2. **Configure environment**  
+   Copy `.env` templates and edit:
 
-   - Ensure `.env.test` contains test-specific values (e.g., test DB).
+   ```bash
+   cp .env.example .env
+   cp .env.example .env.test
+   ```
 
-3. Prepare SQLx for offline compilation:
+   Update `.env` with:
 
-   - Enable building queries offline by generating metadata with:
+   ```env
+   DATABASE_URL=mysql://user:password@localhost/clean_axum_demo
+   JWT_SECRET_KEY=your_super_secret_key
+   SERVICE_PORT=8080
+   ```
 
-     ```bash
-     cargo sqlx prepare
-     ```
+   Ensure `.env.test` has test-specific values (e.g., test DB).
 
-   - For more details, see: <https://github.com/launchbadge/sqlx/tree/main/sqlx-cli>
+3. **Prepare SQLx (Offline Compilation)**  
+   Generate offline metadata:
 
-4. Start the application:
+   ```bash
+   cargo sqlx prepare
+   ```
+
+4. **Running the Application Locally**
 
    ```bash
    cargo run
    ```
 
-5. Example Login & Protected‑API Usage:
+#### Usage
+
+1. Example Login & Protected‑API Usage:
 
    - Send a login request:
 
@@ -86,9 +97,9 @@ This document outlines a Rust API Server Sample Demo using Axum and SQLx. It int
        -H "Authorization: Bearer <token>"
      ```
 
-6. View the API documentation:
+2. View the API documentation:
    Open your browser and go to [http://localhost:8080/docs](http://localhost:8080/docs).
-7. Access protected endpoints:
+3. Access protected endpoints:
 
    - Authenticate by sending a `POST` request to `/auth/login` (e.g., via Swagger UI or curl).
 
@@ -132,8 +143,8 @@ Recommended structure:
 ├── Cargo.lock
 ├── Cargo.toml
 ├── db-seed
-│   ├── seed.sql
-│   └── tables.sql
+│   ├── 01-tables.sql
+│   └── 02-seed.sql
 ├── LICENSE
 ├── README.md
 ├── .env                 # Environment variables for development/runtime configuration

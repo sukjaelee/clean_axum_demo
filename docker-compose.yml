@@ -1,0 +1,31 @@
+services:
+  mariadb:
+    image: mariadb:10.9
+    container_name: axum_mariadb
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: testdb
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: pass
+    ports:
+      - "13306:3306"
+    volumes:
+      - type: tmpfs
+        target: /var/lib/mysql
+      - ./db-seed:/docker-entrypoint-initdb.d
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clean_axum_app
+    depends_on:
+      - mariadb
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env      
+    environment:
+      - DATABASE_URL=mysql://testuser:pass@axum_mariadb:3306/testdb
+
