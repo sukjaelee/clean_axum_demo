@@ -47,7 +47,7 @@ fn load_test_env() {
     });
 }
 
-//// Helper function to set up the test database state
+/// Helper function to set up the test database state
 pub async fn setup_test_db() -> Result<Pool<MySql>, Box<dyn std::error::Error>> {
     load_test_env();
     let config = Config::from_env()?;
@@ -141,8 +141,8 @@ pub async fn deserialize_json_body<T: serde::de::DeserializeOwned>(
 pub async fn request(method: Method, uri: &str) -> Response<Body> {
     let request = get_request(method, uri);
     let app = create_test_router().await;
-    let response = app.oneshot(request.await).await.unwrap();
-    response
+
+    app.oneshot(request.await).await.unwrap()
 }
 
 /// Helper function to create a request with a body
@@ -155,8 +155,8 @@ pub async fn request_with_body<T: serde::Serialize>(
     let json_payload = serde_json::to_string(payload).expect("Failed to serialize payload");
     let request = get_request_with_body(method, uri, &json_payload);
     let app = create_test_router().await;
-    let response = app.oneshot(request.await).await.unwrap();
-    response
+
+    app.oneshot(request.await).await.unwrap()
 }
 
 /// Helper function to create a request with authentication
@@ -165,8 +165,8 @@ pub async fn request_with_auth(method: Method, uri: &str) -> Response<Body> {
     let token = get_authentication_token().await;
     let request = get_request_with_auth(method, uri, &token);
     let app = create_test_router().await;
-    let response = app.oneshot(request.await).await.unwrap();
-    response
+
+    app.oneshot(request.await).await.unwrap()
 }
 
 /// Helper function to create a request with authentication and a body
@@ -180,8 +180,8 @@ pub async fn request_with_auth_and_body<T: serde::Serialize>(
     let token = get_authentication_token().await;
     let request = get_request_with_auth_and_body(method, uri, &token, &json_payload);
     let app = create_test_router().await;
-    let response = app.oneshot(request.await).await.unwrap();
-    response
+
+    app.oneshot(request.await).await.unwrap()
 }
 
 /// Helper function to create a request with authentication and multipart data
@@ -194,21 +194,19 @@ pub async fn request_with_auth_and_multipart(
     let token = get_authentication_token().await;
     let request = get_request_with_auth_and_multipart(method, uri, &token, payload);
     let app = create_test_router().await;
-    let response = app.oneshot(request.await).await.unwrap();
-    response
+
+    app.oneshot(request.await).await.unwrap()
 }
 
 /// internal helper functions to create requests
 async fn get_request(method: Method, uri: &str) -> Request<Body> {
-    let request = Request::builder()
+    Request::builder()
         .method(method)
         .uri(uri.to_string())
         .header(CONTENT_TYPE, "application/json")
         .header(ACCEPT, "application/json")
         .body(axum::body::Body::empty())
-        .unwrap();
-
-    request
+        .unwrap()
 }
 
 /// internal helper function to create a request with a body
@@ -226,16 +224,14 @@ async fn get_request_with_body(method: Method, uri: &str, payload: &str) -> Requ
 
 /// internal helper function to create a request with authorization
 async fn get_request_with_auth(method: Method, uri: &str, token: &str) -> Request<Body> {
-    let request = Request::builder()
+    Request::builder()
         .method(method)
         .uri(uri.to_string())
         .header(CONTENT_TYPE, "application/json")
         .header(AUTHORIZATION, token)
         .header(ACCEPT, "application/json")
         .body(axum::body::Body::empty())
-        .unwrap();
-
-    request
+        .unwrap()
 }
 
 async fn get_request_with_auth_and_body(
@@ -244,16 +240,14 @@ async fn get_request_with_auth_and_body(
     token: &str,
     payload: &str,
 ) -> Request<Body> {
-    let request = Request::builder()
+    Request::builder()
         .method(method)
         .uri(uri.to_string())
         .header(CONTENT_TYPE, "application/json")
         .header(AUTHORIZATION, token)
         .header(ACCEPT, "application/json")
         .body(axum::body::Body::from(payload.to_string()))
-        .unwrap();
-
-    request
+        .unwrap()
 }
 
 async fn get_request_with_auth_and_multipart(
@@ -262,14 +256,12 @@ async fn get_request_with_auth_and_multipart(
     token: &str,
     payload: Vec<u8>,
 ) -> Request<Body> {
-    let request = Request::builder()
+    Request::builder()
         .method(method)
         .uri(uri.to_string())
         .header(CONTENT_TYPE, "multipart/form-data; boundary=----XYZ")
         .header(AUTHORIZATION, token)
         .header(ACCEPT, "application/json")
         .body(Body::from(payload))
-        .unwrap();
-
-    request
+        .unwrap()
 }

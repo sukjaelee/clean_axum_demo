@@ -126,7 +126,7 @@ pub fn create_router(pool: MySqlPool, config: Config) -> Router {
         .with_state(state)
 }
 
-//// Setup tracing for the application.
+/// Setup tracing for the application.
 /// This function initializes the tracing subscriber with a default filter and formatting.
 pub fn setup_tracing() {
     tracing_subscriber::registry()

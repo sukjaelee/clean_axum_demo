@@ -58,7 +58,7 @@ pub async fn serve_protected_file(
                 file_metadata.origin_file_name
             ),
         )
-        .body(axum::body::Body::from(body))
+        .body(body)
         .map_err(|err| {
             tracing::error!("Error building response: {}", err);
             AppError::InternalError
