@@ -87,7 +87,7 @@ docker-compose down --rmi all
    - Call a protected endpoint:
 
      ```bash
-     curl http://localhost:8080/users \
+     curl http://localhost:8080/user \
        -H "Authorization: Bearer <token>"
      ```
 
