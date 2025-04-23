@@ -25,7 +25,6 @@ use utoipa::{
     ),
     modifiers(&FileApiDoc)
 )]
-
 /// FileApiDoc is used to generate OpenAPI documentation for the file API.
 pub struct FileApiDoc;
 

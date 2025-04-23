@@ -31,7 +31,6 @@ use utoipa::{
     ),
     modifiers(&UserApiDoc)
 )]
-
 /// This struct is used to generate OpenAPI documentation for the user routes.
 pub struct UserApiDoc;
 

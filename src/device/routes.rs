@@ -32,7 +32,6 @@ use utoipa::{
     ),
     modifiers(&DeviceApiDoc)
 )]
-
 /// This struct is used to generate OpenAPI documentation for the device routes.
 pub struct DeviceApiDoc;
 

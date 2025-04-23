@@ -74,7 +74,7 @@ async fn create_user_with_file() -> Result<(CreateUserMultipartDto, UserDto, Str
     // Read the image file from the test/asset/ directory
     let file_path = format!("tests/asset/{}", image_file);
     let file_bytes = std::fs::read(file_path)
-        .expect(format!("Failed to read {} from tests/asset/", image_file).as_str());
+        .unwrap_or_else(|_| panic!("Failed to read {} from tests/asset/", image_file));
 
     // Build the multipart body as a byte vector (Vec<u8>)
     let mut multipart_body = Vec::new();
@@ -153,9 +153,8 @@ async fn get_users() -> Vec<UserDto> {
     let response_body: RestApiResponse<Vec<UserDto>> = deserialize_json_body(body).await.unwrap();
 
     assert_eq!(response_body.0.status, StatusCode::OK);
-    let user_dtos = response_body.0.data.unwrap();
 
-    user_dtos
+    response_body.0.data.unwrap()
 }
 
 #[tokio::test]

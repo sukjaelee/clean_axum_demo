@@ -132,11 +132,7 @@ impl FileService {
             generate_unique_filename(original_filename, base_dir_with_profile.to_str().unwrap());
         let file_path = base_dir_with_profile.join(&unique_filename);
 
-        let relative_path = format!(
-            "{}/{}",
-            FileType::ProfilePicture.to_string(),
-            unique_filename
-        );
+        let relative_path = format!("{}/{}", FileType::ProfilePicture, unique_filename);
         (unique_filename, relative_path, file_path)
     }
 
@@ -207,7 +203,7 @@ impl FileService {
     }
 }
 
-//// Generates a unique filename by appending a number to the base name if it already exists.
+/// Generates a unique filename by appending a number to the base name if it already exists.
 fn generate_unique_filename(original: &str, base_dir: &str) -> String {
     let path = FilePath::new(original);
     let stem = path.file_stem().unwrap_or_default().to_string_lossy();

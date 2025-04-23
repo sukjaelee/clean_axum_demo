@@ -23,7 +23,7 @@ pub fn hash_password(password: &str) -> Result<String, argon2::Error> {
 
 /// Verify that a password matches the provided çå.
 pub fn verify_password(password_hash: &str, password: &str) -> bool {
-    let parsed_hash = match PasswordHash::new(&password_hash) {
+    let parsed_hash = match PasswordHash::new(password_hash) {
         Ok(hash) => hash,
         Err(e) => {
             tracing::error!("Error hashing password: {}", e);
@@ -54,6 +54,6 @@ mod tests {
     fn test_argon2_jvm_verify() {
         let password = "mySecretPassword";
         let hash = "$argon2i$v=19$m=65536,t=2,p=1$vNVL5PZ1hRwgLUlGmCQVTA$fg1d0/f8pdtMnzQTeh2YE6R0E8vfqMOQOs5k6Y22Qi0";
-        assert!(verify_password(&hash, password));
+        assert!(verify_password(hash, password));
     }
 }

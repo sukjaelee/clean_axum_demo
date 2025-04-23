@@ -52,6 +52,7 @@ impl From<String> for DeviceStatus {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub enum DeviceOS {
     #[serde(rename = "Android")]
