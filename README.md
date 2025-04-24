@@ -97,23 +97,24 @@ Recommended layout:
 ├── src
 │   ├── app.rs                 # Axum router and middleware setup
 │   ├── <domain>/              # Replace with: auth, user, device, file, etc.
+│   ├── <domain>.rs            # Module entry point. Replace with: auth, user, device, file, etc.
+│   │   └── controller.rs      # Module entry point
 │   │   ├── controller/        # HTTP handlers and route definitions
 │   │   │   ├── handlers.rs
-│   │   │   ├── mod.rs
 │   │   │   └── routes.rs
+│   │   └── db.rs
 │   │   ├── db/                # SQLx query logic
-│   │   │   ├── mod.rs
 │   │   │   └── queries.rs
+│   │   └── domain.rs
 │   │   ├── domain/            # Domain logic: models, traits
-│   │   │   ├── mod.rs
 │   │   │   ├── model.rs
 │   │   │   ├── repository.rs
 │   │   │   └── service.rs
 │   │   ├── dto.rs             # Data Transfer Objects
+│   │   └── infra.rs
 │   │   ├── infra/             # Infrastructure-layer service implementations
-│   │   │   ├── mod.rs
 │   │   │   └── service.rs
-│   │   └── mod.rs
+│   ├── common.rs              # Module entry point for common/
 │   ├── common/                # Shared components/utilities
 │   │   ├── app_state.rs          # Defines AppState struct for dependency injection
 │   │   ├── bootstrap.rs          # Initializes services and constructs AppState
@@ -122,17 +123,18 @@ Recommended layout:
 │   │   ├── error.rs              # Defines AppError enum and error mappers
 │   │   ├── hash_util.rs          # Hashing utilities (e.g., bcrypt)
 │   │   ├── jwt.rs                # JWT encoding/decoding and validation
-│   │   ├── mod.rs                # Module entry point for common/
 │   │   └── ts_format.rs          # Custom timestamp formatting for serialization
-│   ├── lib.rs
-│   ├── main.rs
+│   ├── lib.rs               # Declares top-level modules like app, auth, user, etc.
+│   ├── main.rs              # Application entry point
+│   ├── .env                 # Environment variables for local development
+│   ├── .env.test            # Environment overrides for test environment (e.g., test DB)
 └── tests/                     # Integration and API tests
-    ├── asset/                # Test file assets
+    ├── asset/                 # Test file assets
     │   ├── cat.png
     │   └── mario_PNG52.png
     ├── test_auth_routes.rs
     ├── test_device_routes.rs
-    ├── test_helpers.rs
+    ├── test_helpers.rs       # Shared setup and utility functions for integration tests
     └── test_user_routes.rs
 ```
 

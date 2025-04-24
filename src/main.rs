@@ -1,17 +1,9 @@
-use app::create_router;
-
+use clean_axum_demo::{app::create_router, common};
 use common::{
     bootstrap::{build_app_state, setup_tracing, shutdown_signal},
     config::{setup_database, Config},
 };
 use tracing::info;
-
-mod app;
-mod auth;
-mod common;
-mod device;
-mod file;
-mod user;
 
 /// Main entry point for the application.
 /// It sets up the database connection, initializes the server, and starts listening for requests.
