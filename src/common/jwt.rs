@@ -17,7 +17,7 @@ use super::error::AppError;
 /// It is loaded from the environment variables using the dotenv crate.
 /// The secret key is used to sign the JWT tokens and should be kept secret.
 pub static KEYS: LazyLock<Keys> = LazyLock::new(|| {
-    dotenv::dotenv().ok();
+    dotenvy::dotenv().ok();
 
     let secret = env::var("JWT_SECRET_KEY").expect("JWT_SECRET_KEY must be set");
     Keys::new(secret.as_bytes())

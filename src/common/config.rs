@@ -32,7 +32,7 @@ pub struct Config {
 /// It returns a Result with the Config struct or an error if any of the environment variables are missing.
 impl Config {
     pub fn from_env() -> Result<Self, env::VarError> {
-        dotenv::dotenv().ok();
+        dotenvy::dotenv().ok();
 
         Ok(Self {
             database_url: env::var("DATABASE_URL")?,

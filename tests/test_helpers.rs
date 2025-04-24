@@ -9,7 +9,7 @@ use axum::{
     Router,
 };
 
-use dotenv::from_filename;
+use dotenvy::from_filename;
 use http_body_util::BodyExt;
 
 use clean_axum_demo::{

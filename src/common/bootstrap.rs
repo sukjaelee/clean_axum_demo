@@ -28,7 +28,7 @@ pub fn build_app_state(pool: MySqlPool, config: Config) -> AppState {
 /// Setup tracing for the application.
 /// This function initializes the tracing subscriber with a default filter and formatting.
 pub fn setup_tracing() {
-    dotenv::dotenv().ok();
+    dotenvy::dotenv().ok();
 
     tracing_subscriber::registry()
         .with(
