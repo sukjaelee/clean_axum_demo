@@ -96,20 +96,20 @@ Recommended layout:
 ```plaintext
 ├── src
 
-│   ├── <domain>/           # Replace with: auth, user, device, file, etc.
-│   │   └── mod.rs          # Module entry point
-│   │   ├── domain/         # Domain logic: models, traits
+│   ├── <domain>/             # Replace with: auth, user, device, file, etc.
+│   │   ├── mod.rs            # Module entry point
+│   │   ├── domain/           # Domain logic: models, traits
 │   │   │   ├── mod.rs
 │   │   │   ├── model.rs
 │   │   │   ├── repository.rs
 │   │   │   └── service.rs
-│   │   ├── handlers.rs     # HTTP handlers
-│   │   ├── routes.rs       # Route definitions
-│   │   └── queries.rs      # SQLx query logic
-│   │   ├── dto.rs          # Data Transfer Objects
-│   │   └── service.rs      # Infrastructure-layer service implementations
+│   │   ├── handlers.rs       # HTTP handlers
+│   │   ├── routes.rs         # Route definitions
+│   │   ├── queries.rs        # SQLx query logic
+│   │   ├── dto.rs            # Data Transfer Objects
+│   │   └── service.rs        # Infrastructure-layer service implementations
 
-│   ├── common/                # Shared components/utilities
+│   ├── common/               # Shared components/utilities
 │   │   ├── mod.rs
 │   │   ├── app_state.rs          # Defines AppState struct for dependency injection
 │   │   ├── bootstrap.rs          # Initializes services and constructs AppState
@@ -120,7 +120,7 @@ Recommended layout:
 │   │   ├── jwt.rs                # JWT encoding/decoding and validation
 │   │   └── ts_format.rs          # Custom timestamp formatting for serialization
 │   ├── lib.rs               # Declares top-level modules like app, auth, user, etc.
-│   ├── app.rs                 # Axum router and middleware setup
+│   ├── app.rs               # Axum router and middleware setup
 │   ├── main.rs              # Application entry point
 │   ├── .env                 # Environment variables for local development
 │   ├── .env.test            # Environment overrides for test environment (e.g., test DB)
