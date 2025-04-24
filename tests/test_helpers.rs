@@ -15,6 +15,7 @@ use http_body_util::BodyExt;
 use clean_axum_demo::{
     app::create_router,
     common::{
+        bootstrap::build_app_state,
         config::Config,
         dto::RestApiResponse,
         jwt::{AuthBody, AuthPayload},
@@ -65,16 +66,15 @@ pub async fn setup_test_db() -> Result<Pool<MySql>, Box<dyn std::error::Error>> 
     // If you must set timezone, do it in SQL after connect
 
     let pool = MySqlPoolOptions::new()
-        .max_connections(2)
-        .min_connections(1)
+        .max_connections(config.database_max_connections)
+        .min_connections(config.database_min_connections)
         .connect_with(connect_options)
         .await?;
 
     // Optional: set timezone in session
-    sqlx::query("SET time_zone = '+00:00'")
+    sqlx::query(&format!("SET time_zone = '{}'", config.database_time_zone))
         .execute(&pool)
-        .await
-        .expect("Failed to set timezone");
+        .await?;
 
     Ok(pool)
 }
@@ -83,7 +83,10 @@ pub async fn setup_test_db() -> Result<Pool<MySql>, Box<dyn std::error::Error>> 
 pub async fn create_test_router() -> Router {
     let pool = setup_test_db().await.unwrap();
     let config = Config::from_env().unwrap();
-    create_router(pool.clone(), config)
+    let state = build_app_state(pool, config.clone());
+    let app = create_router(state);
+
+    app
 }
 
 /// Helper function gets the authentication token

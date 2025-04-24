@@ -1,4 +1,4 @@
-use super::model::{FileType, UploadedFile};
+use super::domain::model::{FileType, UploadedFile};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use utoipa::ToSchema;

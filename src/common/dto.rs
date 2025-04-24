@@ -2,7 +2,7 @@ use axum::response::{IntoResponse, Response};
 use serde::{Deserialize, Serialize};
 
 /// A standardized API response format.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ApiResponse<T>
 where
     T: Serialize,
@@ -54,7 +54,7 @@ where
 /// This struct is used to convert the API response into a format that can be returned by Axum.
 /// It implements the `IntoResponse` trait, which allows it to be used as a response in Axum handlers.
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct RestApiResponse<T: Serialize>(pub ApiResponse<T>);
 
 /// A wrapper for the API response that implements `IntoResponse`.

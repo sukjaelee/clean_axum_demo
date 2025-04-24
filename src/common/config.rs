@@ -10,6 +10,9 @@ use std::{env, str::FromStr};
 pub struct Config {
     pub database_url: String,
     pub database_charset: String,
+    pub database_max_connections: u32,
+    pub database_min_connections: u32,
+    pub database_time_zone: String,
 
     pub service_host: String,
     pub service_port: String,
@@ -35,6 +38,14 @@ impl Config {
             database_url: env::var("DATABASE_URL")?,
             database_charset: env::var("DATABASE_CHARSET")
                 .unwrap_or_else(|_| "utf8mb4".to_string()),
+            database_max_connections: env::var("DATABASE_MAX_CONNECTIONS")
+                .map(|s| s.parse::<u32>().unwrap_or(5))
+                .unwrap_or(5),
+            database_min_connections: env::var("DATABASE_MIN_CONNECTIONS")
+                .map(|s| s.parse::<u32>().unwrap_or(1))
+                .unwrap_or(1),
+            database_time_zone: env::var("DATABASE_TIME_ZONE")
+                .unwrap_or_else(|_| "+00:00".to_string()),
 
             service_host: env::var("SERVICE_HOST")?,
             service_port: env::var("SERVICE_PORT")?,
@@ -68,13 +79,13 @@ pub async fn setup_database(config: &Config) -> Result<MySqlPool, sqlx::Error> {
     // If you must set timezone, do it in SQL after connect
 
     let pool = MySqlPoolOptions::new()
-        .max_connections(5)
-        .min_connections(1)
+        .max_connections(config.database_max_connections)
+        .min_connections(config.database_min_connections)
         .connect_with(connect_options)
         .await?;
 
     // Optional: set timezone in session
-    sqlx::query("SET time_zone = '+00:00'")
+    sqlx::query(&format!("SET time_zone = '{}'", config.database_time_zone))
         .execute(&pool)
         .await?;
 
