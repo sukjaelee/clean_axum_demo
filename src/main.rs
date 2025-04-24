@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let addr = format!("{}:{}", config.service_host, config.service_port);
 
-    info!("Starting server on {addr}");
+    info!("Server running at {addr}");
 
     let listener = tokio::net::TcpListener::bind(&addr).await?;
 
@@ -32,7 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_graceful_shutdown(shutdown_signal())
         .await?;
 
-    info!("Server stopped");
+    info!("Server shutdown complete");
 
     Ok(())
 }
