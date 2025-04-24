@@ -1,6 +1,9 @@
 use app::create_router;
 
-use common::config::{setup_database, Config};
+use common::{
+    bootstrap::{build_app_state, setup_tracing, shutdown_signal},
+    config::{setup_database, Config},
+};
 use tracing::info;
 
 mod app;
@@ -20,11 +23,12 @@ mod user;
 /// Panics if the environment variables are not set correctly or if the server fails to start.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    app::setup_tracing();
+    setup_tracing();
 
     let config = Config::from_env()?;
     let pool = setup_database(&config).await?;
-    let app = create_router(pool, config.clone());
+    let state = build_app_state(pool, config.clone());
+    let app = create_router(state);
 
     let addr = format!("{}:{}", config.service_host, config.service_port);
 
@@ -33,7 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let listener = tokio::net::TcpListener::bind(&addr).await?;
 
     axum::serve(listener, app)
-        .with_graceful_shutdown(app::shutdown_signal())
+        .with_graceful_shutdown(shutdown_signal())
         .await?;
 
     info!("Server stopped");

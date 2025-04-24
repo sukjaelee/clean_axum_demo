@@ -166,8 +166,10 @@ async fn test_get_users() {
 
 #[tokio::test]
 async fn test_get_user_by_id() {
-    let users = get_users().await;
-    let existent_id = &users[0].id;
+    let created = create_user().await.expect("Failed to create user");
+
+    let existent_user = created.1;
+    let existent_id = existent_user.id;
 
     let url = format!("/user/{}", existent_id);
     let response = request_with_auth(Method::GET, url.as_str());
@@ -182,20 +184,22 @@ async fn test_get_user_by_id() {
     let user_dto = response_body.0.data.unwrap();
 
     assert_eq!(user_dto.id, *existent_id);
-    assert_eq!(user_dto.username, users[0].username);
-    assert_eq!(user_dto.email, users[0].email);
-    assert_eq!(user_dto.created_by, users[0].created_by);
-    assert_eq!(user_dto.created_at, users[0].created_at);
-    assert_eq!(user_dto.modified_by, users[0].modified_by);
-    assert_eq!(user_dto.modified_at, users[0].modified_at);
-    assert_eq!(user_dto.file_id, users[0].file_id);
-    assert_eq!(user_dto.origin_file_name, users[0].origin_file_name);
+    assert_eq!(user_dto.username, existent_user.username);
+    assert_eq!(user_dto.email, existent_user.email);
+    assert_eq!(user_dto.created_by, existent_user.created_by);
+    assert_eq!(user_dto.created_at, existent_user.created_at);
+    assert_eq!(user_dto.modified_by, existent_user.modified_by);
+    assert_eq!(user_dto.modified_at, existent_user.modified_at);
+    assert_eq!(user_dto.file_id, existent_user.file_id);
+    assert_eq!(user_dto.origin_file_name, existent_user.origin_file_name);
 }
 
 #[tokio::test]
 async fn test_update_user() {
-    let users = get_users().await;
-    let existent_id = &users[0].id;
+    let created = create_user().await.expect("Failed to create user");
+
+    let existent_user = created.1;
+    let existent_id = existent_user.id;
 
     let username = format!("update-testuser-{}", uuid::Uuid::new_v4()).to_string();
     let email = format!("{}@test.com", username).to_string();

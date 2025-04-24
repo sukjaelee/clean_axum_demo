@@ -3,7 +3,7 @@ use time::OffsetDateTime;
 use utoipa::ToSchema;
 use validator::Validate;
 
-use super::model::User;
+use super::domain::model::User;
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct UserDto {

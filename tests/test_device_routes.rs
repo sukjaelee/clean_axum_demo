@@ -3,11 +3,11 @@ use axum::http::{Method, StatusCode};
 use clean_axum_demo::{
     common::dto::RestApiResponse,
     device::{
+        domain::model::{DeviceOS, DeviceStatus},
         dto::{
             CreateDeviceDto, DeviceDto, UpdateDeviceDto, UpdateDeviceDtoWithIdDto,
             UpdateManyDevicesDto,
         },
-        model::{DeviceOS, DeviceStatus},
     },
 };
 
@@ -16,6 +16,25 @@ mod test_helpers;
 use test_helpers::{
     deserialize_json_body, request_with_auth, request_with_auth_and_body, TEST_USER_ID,
 };
+
+async fn create_test_device() -> DeviceDto {
+    let name = format!("test-device-{}", Uuid::new_v4()).to_string();
+
+    let payload = CreateDeviceDto {
+        name,
+        user_id: TEST_USER_ID.to_string(),
+        device_os: DeviceOS::Android,
+        status: DeviceStatus::Active,
+        modified_by: TEST_USER_ID.to_string(),
+    };
+
+    let response = request_with_auth_and_body(Method::POST, "/device", &payload);
+    let (parts, body) = response.await.into_parts();
+    assert_eq!(parts.status, StatusCode::OK);
+
+    let response_body: RestApiResponse<DeviceDto> = deserialize_json_body(body).await.unwrap();
+    response_body.0.data.unwrap()
+}
 
 #[tokio::test]
 async fn test_create_device() {
@@ -70,8 +89,8 @@ async fn test_get_devices() {
 
 #[tokio::test]
 async fn test_get_device_by_id() {
-    let devices = get_devices().await;
-    let existent_id = &devices[0].id;
+    let device = create_test_device().await;
+    let existent_id = &device.id;
 
     let url = format!("/device/{}", existent_id);
     let response = request_with_auth(Method::GET, url.as_str());
@@ -87,16 +106,15 @@ async fn test_get_device_by_id() {
     let response_device = response_body.0.data.unwrap();
 
     assert_eq!(response_device.id, *existent_id);
-    assert_eq!(response_device.name, devices[0].name);
-    assert_eq!(response_device.user_id, devices[0].user_id);
-    assert_eq!(response_device.device_os, devices[0].device_os);
-    assert_eq!(response_device.status, devices[0].status);
+    assert_eq!(response_device.name, device.name);
+    assert_eq!(response_device.user_id, device.user_id);
+    assert_eq!(response_device.device_os, device.device_os);
+    assert_eq!(response_device.status, device.status);
 }
 
 #[tokio::test]
 async fn test_update_device() {
-    let devices = get_devices().await;
-    let existent_device = &devices[0];
+    let existent_device = &create_test_device().await;
 
     let name = format!("update-device-{}", Uuid::new_v4()).to_string();
 

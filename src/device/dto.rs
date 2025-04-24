@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use time::OffsetDateTime;
 
-use super::model::{Device, DeviceOS, DeviceStatus};
+use super::domain::model::{Device, DeviceOS, DeviceStatus};
 
 use utoipa::ToSchema;
 

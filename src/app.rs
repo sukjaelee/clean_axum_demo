@@ -12,7 +12,6 @@ use axum::{
 };
 use http_body_util::BodyExt;
 
-use sqlx::MySqlPool;
 use std::time::Duration;
 use tower::ServiceBuilder;
 use tower_http::{
@@ -20,26 +19,25 @@ use tower_http::{
     services::ServeDir,
     trace::TraceLayer,
 };
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
 use utoipa::OpenApi;
 
 use crate::{
-    auth::routes::user_auth_routes,
+    auth::controller::routes::user_auth_routes,
     common::{
         app_state::AppState,
-        config::Config,
         error::{handle_error, AppError},
         jwt,
     },
-    device::routes::device_routes,
-    file::routes::file_routes,
-    user::routes::user_routes,
+    device::controller::routes::device_routes,
+    file::controller::routes::file_routes,
+    user::controller::routes::user_routes,
 };
 
-use crate::auth::routes::UserAuthApiDoc;
-use crate::device::routes::DeviceApiDoc;
-use crate::file::routes::FileApiDoc;
-use crate::user::routes::UserApiDoc;
+use crate::auth::controller::routes::UserAuthApiDoc;
+use crate::device::controller::routes::DeviceApiDoc;
+use crate::file::controller::routes::FileApiDoc;
+use crate::user::controller::routes::UserApiDoc;
 use utoipa_swagger_ui::SwaggerUi;
 
 fn create_swagger_ui() -> SwaggerUi {
@@ -53,14 +51,7 @@ fn create_swagger_ui() -> SwaggerUi {
         .url("/api-docs/file/openapi.json", FileApiDoc::openapi())
 }
 
-async fn health_check() -> &'static str {
-    "OK\n"
-}
-
-pub fn create_router(pool: MySqlPool, config: Config) -> Router {
-    // Create the shared state by calling the constructor in config.rs
-    let state = AppState::new(pool, config.clone());
-
+pub fn create_router(state: AppState) -> Router {
     // Create cors middleware
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
@@ -86,8 +77,8 @@ pub fn create_router(pool: MySqlPool, config: Config) -> Router {
 
     // setup assets routes
     let assets_routes = Router::new().nest_service(
-        config.assets_public_url.as_str(),
-        ServeDir::new(config.assets_public_path),
+        state.config.assets_public_url.as_str(),
+        ServeDir::new(state.config.assets_public_path.clone()),
     );
 
     // Create the main router
@@ -126,39 +117,14 @@ pub fn create_router(pool: MySqlPool, config: Config) -> Router {
         .with_state(state)
 }
 
-/// Setup tracing for the application.
-/// This function initializes the tracing subscriber with a default filter and formatting.
-pub fn setup_tracing() {
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-                "debug,sqlx=debug,tower_http=info,axum::rejection=trace".into()
-            }),
-        )
-        .with(
-            tracing_subscriber::fmt::layer()
-                .with_file(true)
-                .with_line_number(true)
-                .with_thread_ids(true)
-                .with_thread_names(true)
-                .with_target(true)
-                .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE),
-        )
-        .init();
+async fn health_check() -> &'static str {
+    "OK\n"
 }
 
 /// Fallback handler for unmatched routes
 /// This function returns a 404 Not Found response with a message.
 pub async fn fallback() -> Result<impl IntoResponse, AppError> {
     Ok((StatusCode::NOT_FOUND, "Not Found"))
-}
-
-/// Shutdown signal handler
-/// This function listens for a shutdown signal (CTRL+C) and logs a message when received.
-pub async fn shutdown_signal() {
-    tokio::signal::ctrl_c()
-        .await
-        .expect("Failed to install CTRL+C signal handler");
 }
 
 /// Middleware to print request and response bodies
