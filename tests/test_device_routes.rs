@@ -66,7 +66,8 @@ async fn test_create_device() {
     assert_ne!(device_dto.modified_by, Some(payload.modified_by));
 }
 
-async fn get_devices() -> Vec<DeviceDto> {
+#[tokio::test]
+async fn test_get_devices() {
     let response = request_with_auth(Method::GET, "/device");
 
     let (parts, body) = response.await.into_parts();
@@ -77,12 +78,8 @@ async fn get_devices() -> Vec<DeviceDto> {
 
     assert_eq!(response_body.0.status, StatusCode::OK);
 
-    response_body.0.data.unwrap()
-}
+    let devices = response_body.0.data.unwrap();
 
-#[tokio::test]
-async fn test_get_devices() {
-    let devices = get_devices().await;
     // println!("devices: {:?}", devices);
     assert!(!devices.is_empty());
 }
@@ -169,8 +166,7 @@ async fn test_delete_device_not_found() {
 
 #[tokio::test]
 async fn test_delete_device() {
-    let devices = get_devices().await;
-    let existent_device = &devices[0];
+    let existent_device = create_test_device().await;
     let existent_id = existent_device.id.clone();
 
     let url = format!("/device/{}", existent_id);
@@ -188,8 +184,7 @@ async fn test_delete_device() {
 
 #[tokio::test]
 async fn test_update_many_devices() {
-    let devices = get_devices().await;
-    let existent_device = &devices[0];
+    let existent_device = create_test_device().await;
 
     let user_id = TEST_USER_ID.to_string();
 

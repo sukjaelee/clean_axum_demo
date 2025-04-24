@@ -143,7 +143,8 @@ async fn test_create_user_with_file() {
     assert!(!user_dto.file_id.clone().unwrap_or_default().is_empty());
 }
 
-async fn get_users() -> Vec<UserDto> {
+#[tokio::test]
+async fn test_get_users() {
     let response = request_with_auth(Method::GET, "/user");
 
     let (parts, body) = response.await.into_parts();
@@ -154,12 +155,8 @@ async fn get_users() -> Vec<UserDto> {
 
     assert_eq!(response_body.0.status, StatusCode::OK);
 
-    response_body.0.data.unwrap()
-}
+    let user_dtos = response_body.0.data.unwrap();
 
-#[tokio::test]
-async fn test_get_users() {
-    let user_dtos: Vec<UserDto> = get_users().await;
     // println!("user_dtos: {:?}", user_dtos);
     assert!(!user_dtos.is_empty());
 }
