@@ -95,27 +95,22 @@ Recommended layout:
 
 ```plaintext
 ├── src
-│   ├── app.rs                 # Axum router and middleware setup
-│   ├── <domain>/              # Replace with: auth, user, device, file, etc.
-│   ├── <domain>.rs            # Module entry point. Replace with: auth, user, device, file, etc.
-│   │   └── controller.rs      # Module entry point
-│   │   ├── controller/        # HTTP handlers and route definitions
-│   │   │   ├── handlers.rs
-│   │   │   └── routes.rs
-│   │   └── db.rs
-│   │   ├── db/                # SQLx query logic
-│   │   │   └── queries.rs
-│   │   └── domain.rs
-│   │   ├── domain/            # Domain logic: models, traits
+
+│   ├── <domain>/           # Replace with: auth, user, device, file, etc.
+│   │   └── mod.rs          # Module entry point
+│   │   ├── domain/         # Domain logic: models, traits
+│   │   │   ├── mod.rs
 │   │   │   ├── model.rs
 │   │   │   ├── repository.rs
 │   │   │   └── service.rs
-│   │   ├── dto.rs             # Data Transfer Objects
-│   │   └── infra.rs
-│   │   ├── infra/             # Infrastructure-layer service implementations
-│   │   │   └── service.rs
-│   ├── common.rs              # Module entry point for common/
+│   │   ├── handlers.rs     # HTTP handlers
+│   │   ├── routes.rs       # Route definitions
+│   │   └── queries.rs      # SQLx query logic
+│   │   ├── dto.rs          # Data Transfer Objects
+│   │   └── service.rs      # Infrastructure-layer service implementations
+
 │   ├── common/                # Shared components/utilities
+│   │   ├── mod.rs
 │   │   ├── app_state.rs          # Defines AppState struct for dependency injection
 │   │   ├── bootstrap.rs          # Initializes services and constructs AppState
 │   │   ├── config.rs             # Loads configuration from environment variables
@@ -125,6 +120,7 @@ Recommended layout:
 │   │   ├── jwt.rs                # JWT encoding/decoding and validation
 │   │   └── ts_format.rs          # Custom timestamp formatting for serialization
 │   ├── lib.rs               # Declares top-level modules like app, auth, user, etc.
+│   ├── app.rs                 # Axum router and middleware setup
 │   ├── main.rs              # Application entry point
 │   ├── .env                 # Environment variables for local development
 │   ├── .env.test            # Environment overrides for test environment (e.g., test DB)

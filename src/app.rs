@@ -23,21 +23,21 @@ use tower_http::{
 use utoipa::OpenApi;
 
 use crate::{
-    auth::controller::routes::user_auth_routes,
+    auth::routes::user_auth_routes,
     common::{
         app_state::AppState,
         error::{handle_error, AppError},
         jwt,
     },
-    device::controller::routes::device_routes,
-    file::controller::routes::file_routes,
-    user::controller::routes::user_routes,
+    device::routes::device_routes,
+    file::routes::file_routes,
+    user::routes::user_routes,
 };
 
-use crate::auth::controller::routes::UserAuthApiDoc;
-use crate::device::controller::routes::DeviceApiDoc;
-use crate::file::controller::routes::FileApiDoc;
-use crate::user::controller::routes::UserApiDoc;
+use crate::auth::routes::UserAuthApiDoc;
+use crate::device::routes::DeviceApiDoc;
+use crate::file::routes::FileApiDoc;
+use crate::user::routes::UserApiDoc;
 use utoipa_swagger_ui::SwaggerUi;
 
 fn create_swagger_ui() -> SwaggerUi {

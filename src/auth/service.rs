@@ -1,17 +1,17 @@
 use std::sync::Arc;
 
-use crate::{
-    auth::{
-        db::queries::UserAuthRepo,
-        domain::{model::UserAuth, repository::UserAuthRepository, service::AuthServiceTrait},
-        dto::AuthUserDto,
-    },
-    common::{
-        error::AppError,
-        hash_util,
-        jwt::{make_jwt_token, AuthBody, AuthPayload},
-    },
+use super::{
+    domain::{model::UserAuth, repository::UserAuthRepository, service::AuthServiceTrait},
+    dto::AuthUserDto,
+    queries::UserAuthRepo,
 };
+
+use crate::common::{
+    error::AppError,
+    hash_util,
+    jwt::{make_jwt_token, AuthBody, AuthPayload},
+};
+
 use sqlx::MySqlPool;
 
 /// Service for handling user authentication

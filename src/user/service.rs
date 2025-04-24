@@ -1,11 +1,11 @@
+use super::{
+    domain::{repository::UserRepository, service::UserServiceTrait},
+    dto::{CreateUserMultipartDto, UpdateUserDto, UserDto},
+    queries::UserRepo,
+};
 use crate::{
     common::error::AppError,
     file::{domain::service::FileServiceTrait, dto::UpdateFile},
-    user::{
-        db::queries::UserRepo,
-        domain::{repository::UserRepository, service::UserServiceTrait},
-        dto::{CreateUserMultipartDto, UpdateUserDto, UserDto},
-    },
 };
 use async_trait::async_trait;
 use sqlx::MySqlPool;

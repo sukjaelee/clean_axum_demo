@@ -1,9 +1,9 @@
+use super::{
+    domain::{model::FileType, repository::FileRepository, service::FileServiceTrait},
+    dto::{CreateFile, UpdateFile, UploadedFileDto},
+    queries::FileRepo,
+};
 use crate::common::{config::Config, error::AppError};
-use crate::file::db::queries::FileRepo;
-use crate::file::domain::model::FileType;
-use crate::file::domain::repository::FileRepository;
-use crate::file::domain::service::FileServiceTrait;
-use crate::file::dto::{CreateFile, UpdateFile, UploadedFileDto};
 
 use regex::Regex;
 
@@ -278,7 +278,7 @@ impl FileService {
 
 #[cfg(test)]
 mod tests {
-    use crate::{common::config::Config, file::infra::service::FileService};
+    use crate::{common::config::Config, file::service::FileService};
 
     #[tokio::test]
     async fn test_validate_file_upload() {

@@ -1,10 +1,9 @@
-use crate::{
-    common::error::AppError,
-    device::{
-        db::queries::DeviceRepo,
-        domain::{repository::DeviceRepository, service::DeviceServiceTrait},
-        dto::{CreateDeviceDto, DeviceDto, UpdateDeviceDto, UpdateManyDevicesDto},
-    },
+use crate::common::error::AppError;
+
+use super::{
+    domain::{repository::DeviceRepository, service::DeviceServiceTrait},
+    dto::{CreateDeviceDto, DeviceDto, UpdateDeviceDto, UpdateManyDevicesDto},
+    queries::DeviceRepo,
 };
 
 use async_trait::async_trait;
