@@ -28,11 +28,12 @@ pub fn build_app_state(pool: MySqlPool, config: Config) -> AppState {
 /// Setup tracing for the application.
 /// This function initializes the tracing subscriber with a default filter and formatting.
 pub fn setup_tracing() {
+    dotenv::dotenv().ok();
+
     tracing_subscriber::registry()
         .with(
-            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-                "debug,sqlx=debug,tower_http=info,axum::rejection=trace".into()
-            }),
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "info,sqlx=info,tower_http=info,axum::rejection=trace".into()),
         )
         .with(
             tracing_subscriber::fmt::layer()
