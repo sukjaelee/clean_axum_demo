@@ -134,6 +134,13 @@ Recommended layout:
     └── test_user_routes.rs
 ```
 
+> When adding a new domain module, be sure to register it in the following files:
+>
+> - `src/lib.rs`
+> - `src/app.rs`
+> - `src/common/app_state.rs`
+> - `src/common/bootstrap.rs`
+
 ### 📦 API Response Format
 
 All endpoints return a consistent JSON envelope:
