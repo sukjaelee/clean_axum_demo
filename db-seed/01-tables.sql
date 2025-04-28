@@ -9,20 +9,22 @@ CREATE TABLE users (
     INDEX idx_users_email (email)
 );
 
-CREATE TABLE devices (
-    id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
-    user_id CHAR(36) NOT NULL,
-    name VARCHAR(128) NOT NULL,
-    status VARCHAR(32) NOT NULL,
-    device_os VARCHAR(16) NOT NULL,
-    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by CHAR(36),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    modified_by CHAR(36),
-    modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    INDEX idx_devices_user_id (user_id)
-);
+CREATE TABLE `devices` (
+  `id` char(36) NOT NULL DEFAULT uuid(),
+  `user_id` char(36) NOT NULL,
+  `name` varchar(128) NOT NULL,
+  `status` varchar(32) NOT NULL,
+  `device_os` varchar(16) NOT NULL,
+  `registered_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_by` char(36) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `modified_by` char(36) DEFAULT NULL,
+  `modified_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `devices_unique` (`user_id`,`name`),
+  KEY `idx_devices_user_id` (`user_id`),
+  CONSTRAINT `devices_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+)
 
 CREATE TABLE uploaded_files (
     id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
