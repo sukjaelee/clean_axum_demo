@@ -1,18 +1,15 @@
 use serde::{self, Deserialize, Deserializer, Serializer};
-use time::{format_description, OffsetDateTime, PrimitiveDateTime};
+use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
-/// This module provides serialization and deserialization functions for `OffsetDateTime`
-/// using a specific format. The format is defined as a constant string.
-/// Define the desired time format.
-const FORMAT: &str = "[year]-[month]-[day] [hour]:[minute]:[second]";
+pub const MYSQL_TIMESTAMP_FORMAT: &[time::format_description::FormatItem<'_>] =
+    time::macros::format_description!("[year]-[month]-[day] [hour]:[minute]:[second]");
 
 // OffsetDateTime
 pub fn serialize<S>(date: &OffsetDateTime, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    let format = format_description::parse(FORMAT).map_err(serde::ser::Error::custom)?;
-    let s = date.format(&format).map_err(serde::ser::Error::custom)?;
+    let s = date.format(&Rfc3339).map_err(serde::ser::Error::custom)?;
     serializer.serialize_str(&s)
 }
 
@@ -22,10 +19,7 @@ where
     D: Deserializer<'de>,
 {
     let s = String::deserialize(deserializer)?;
-    let format = format_description::parse(FORMAT).map_err(serde::de::Error::custom)?;
-    PrimitiveDateTime::parse(&s, &format)
-        .map(|dt| dt.assume_utc())
-        .map_err(serde::de::Error::custom)
+    OffsetDateTime::parse(&s, &Rfc3339).map_err(serde::de::Error::custom)
 }
 
 // support for Option<OffsetDateTime>
@@ -47,12 +41,9 @@ pub mod option {
     {
         let opt = Option::<String>::deserialize(deserializer)?;
         match opt {
-            Some(s) => {
-                let format = format_description::parse(FORMAT).map_err(serde::de::Error::custom)?;
-                PrimitiveDateTime::parse(&s, &format)
-                    .map(|dt| Some(dt.assume_utc()))
-                    .map_err(serde::de::Error::custom)
-            }
+            Some(s) => OffsetDateTime::parse(&s, &Rfc3339)
+                .map(Some)
+                .map_err(serde::de::Error::custom),
             None => Ok(None),
         }
     }
