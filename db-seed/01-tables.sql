@@ -24,7 +24,7 @@ CREATE TABLE `devices` (
   UNIQUE KEY `devices_unique` (`user_id`,`name`),
   KEY `idx_devices_user_id` (`user_id`),
   CONSTRAINT `devices_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-)
+);
 
 CREATE TABLE uploaded_files (
     id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
