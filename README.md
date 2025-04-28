@@ -198,7 +198,9 @@ Prefer `sqlx::query!` macros for static, type-checked queries.
 ### 🧱 Database Schema
 
 See `db-seed/` for table definitions and sample data.  
-Future documentation will provide full schema and ER diagrams.
+Below is the Entity Relationship Diagram (ERD) illustrating the database structure:
+
+![ER Diagram](./ERD.png)
 
 ### 🌐 Interface Layer (Axum)
 
