@@ -141,6 +141,8 @@ Recommended layout:
 > - `src/common/app_state.rs`
 > - `src/common/bootstrap.rs`
 
+Domain modules (`domain`, `db`, `dto`, `handlers`, `routes`, etc.) can be automatically generated using [domain_codegen](https://github.com/sukjaelee/domain_codegen).
+
 ### 📦 API Response Format
 
 All endpoints return a consistent JSON envelope:
