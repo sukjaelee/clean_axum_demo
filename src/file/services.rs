@@ -278,7 +278,7 @@ impl FileService {
 
 #[cfg(test)]
 mod tests {
-    use crate::{common::config::Config, file::service::FileService};
+    use crate::{common::config::Config, file::services::FileService};
 
     #[tokio::test]
     async fn test_validate_file_upload() {

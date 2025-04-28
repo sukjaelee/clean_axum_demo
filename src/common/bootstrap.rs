@@ -1,11 +1,11 @@
 use sqlx::MySqlPool; // Import AppError from the appropriate module
 
-use crate::auth::service::AuthService;
+use crate::auth::services::AuthService;
 use crate::common::app_state::AppState;
 use crate::common::config::Config;
-use crate::device::service::DeviceService;
-use crate::file::service::FileService;
-use crate::user::service::UserService;
+use crate::device::services::DeviceService;
+use crate::file::services::FileService;
+use crate::user::services::UserService;
 
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
