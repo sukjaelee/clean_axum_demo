@@ -149,13 +149,14 @@ impl DeviceRepository for DeviceRepo {
         });
 
         builder.push(
-            r#" ON DUPLICATE KEY UPDATE
-                user_id = IF(user_id = VALUES(user_id), user_id, user_id),
-                name = IF(user_id = VALUES(user_id), VALUES(name), name),
-                status = IF(user_id = VALUES(user_id), VALUES(status), status),
-                device_os = IF(user_id = VALUES(user_id), VALUES(device_os), device_os),
-                modified_by = IF(user_id = VALUES(user_id), VALUES(modified_by), modified_by),
-                modified_at = IF(user_id = VALUES(user_id), VALUES(modified_at), modified_at)"#,
+            r#" 
+            ON DUPLICATE KEY UPDATE
+            name = VALUES(name),
+            status = VALUES(status),
+            device_os = VALUES(device_os),
+            modified_by = VALUES(modified_by),
+            modified_at = VALUES(modified_at)
+            "#
         );
 
         let query = builder.build();
