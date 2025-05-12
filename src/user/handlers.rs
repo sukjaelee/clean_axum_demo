@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     common::{app_state::AppState, dto::RestApiResponse, error::AppError, jwt::Claims},
     file::dto::UpdateFile,
@@ -53,12 +55,13 @@ pub async fn create_user(
     Extension(claims): Extension<Claims>,
     mut multipart: Multipart,
 ) -> Result<impl IntoResponse, AppError> {
+    let modified_by = claims.sub.clone().to_string();
+
     // Variables to hold multipart fields.
-    let mut username: Option<String> = None;
-    let mut email: Option<String> = None;
-    let mut profile_picture_data: Option<Vec<u8>> = None;
+    let mut fields = HashMap::new();
     let mut profile_picture_filename: Option<String> = None;
     let mut profile_picture_content_type: Option<String> = None;
+    let mut profile_picture_data: Option<Vec<u8>> = None;
 
     // Helper closure to map multipart errors to AppError.
     let map_err_internal = |err| {
@@ -66,32 +69,30 @@ pub async fn create_user(
         AppError::InternalError
     };
 
-    // Process each field in the multipart form.
     while let Some(field) = multipart.next_field().await.map_err(map_err_internal)? {
         match field.name() {
-            Some("username") => {
-                username = Some(field.text().await.map_err(map_err_internal)?);
-            }
-            Some("email") => {
-                email = Some(field.text().await.map_err(map_err_internal)?);
-            }
             Some("profile_picture") => {
-                // Capture metadata before consuming the field
                 profile_picture_filename = field.file_name().map(|s| s.to_string());
                 profile_picture_content_type = field.content_type().map(|mime| mime.to_string());
-
-                // Now consume the field to get the file bytes
                 profile_picture_data =
                     Some(field.bytes().await.map_err(map_err_internal)?.to_vec());
             }
-            _ => {}
+            Some(name) => {
+                let name = name.to_string();
+                let value = field.text().await.map_err(map_err_internal)?;
+                fields.insert(name, value);
+            }
+            None => {}
         }
     }
 
     // Validate required fields.
-    let username = username.ok_or(AppError::ValidationError("Missing username".into()))?;
-    let email = email.ok_or(AppError::ValidationError("Missing email".into()))?;
-    let modified_by = claims.sub.clone().to_string();
+    let username = fields
+        .remove("username")
+        .ok_or(AppError::ValidationError("Missing username".into()))?;
+    let email = fields
+        .remove("email")
+        .ok_or(AppError::ValidationError("Missing email".into()))?;
 
     // Prepare the CreateUser DTO.
     let create_user = CreateUserMultipartDto {
