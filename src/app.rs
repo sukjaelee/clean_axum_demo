@@ -80,10 +80,17 @@ pub fn create_router(state: AppState) -> Router {
         .route_layer(middleware::from_fn(jwt::jwt_auth));
 
     // setup assets routes
-    let assets_routes = Router::new().nest_service(
+    let public_assets_routes = Router::new().nest_service(
         state.config.assets_public_url.as_str(),
         ServeDir::new(state.config.assets_public_path.clone()),
     );
+
+    let private_assets_routes = Router::new()
+        .nest_service(
+            state.config.assets_private_url.as_str(),
+            ServeDir::new(state.config.assets_private_path.clone()),
+        )
+        .route_layer(middleware::from_fn(jwt::jwt_auth));
 
     // Create the main router
     // and merge all the routes
@@ -94,7 +101,8 @@ pub fn create_router(state: AppState) -> Router {
         .merge(public_routes)
         .merge(protected_routes)
         .merge(create_swagger_ui())
-        .merge(assets_routes)
+        .merge(public_assets_routes)
+        .merge(private_assets_routes)
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|req: &axum::http::Request<_>| {
