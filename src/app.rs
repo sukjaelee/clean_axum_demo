@@ -1,7 +1,7 @@
 use axum::{
     body::{Body, Bytes},
     error_handling::HandleErrorLayer,
-    extract::Request,
+    extract::{DefaultBodyLimit, Request},
     http::{
         header::{AUTHORIZATION, CONTENT_TYPE},
         Method, StatusCode,
@@ -69,10 +69,14 @@ pub fn create_router(state: AppState) -> Router {
     let public_routes = Router::new().nest("/auth", user_auth_routes());
 
     // setup protected routes
+    // by default, Multipart limits the request body size to 2MB.
+    // See DefaultBodyLimit for how to configure this limit.
+    // https://docs.rs/axum/latest/axum/extract/struct.Multipart.html
     let protected_routes = Router::new()
         .nest("/user", user_routes())
         .nest("/device", device_routes())
         .nest("/file", file_routes())
+        .layer(DefaultBodyLimit::max(state.config.asset_max_size))
         .route_layer(middleware::from_fn(jwt::jwt_auth));
 
     // setup assets routes
