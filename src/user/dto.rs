@@ -36,6 +36,12 @@ impl From<User> for UserDto {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct SearchUserDto {
+    pub id: Option<String>,
+    pub username: Option<String>,
+    pub email: Option<String>,
+}
 #[derive(Debug, Serialize, Deserialize, ToSchema, Validate)]
 pub struct CreateUserMultipartDto {
     #[validate(length(max = 64, message = "Username cannot exceed 64 characters"))]

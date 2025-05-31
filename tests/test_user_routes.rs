@@ -2,7 +2,7 @@ use axum::http::{Method, StatusCode};
 
 use clean_axum_demo::{
     common::{dto::RestApiResponse, error::AppError},
-    user::dto::{CreateUserMultipartDto, UpdateUserDto, UserDto},
+    user::dto::{CreateUserMultipartDto, SearchUserDto, UpdateUserDto, UserDto},
 };
 
 mod test_helpers;
@@ -146,6 +146,32 @@ async fn test_create_user_with_file() {
 #[tokio::test]
 async fn test_get_users() {
     let response = request_with_auth(Method::GET, "/user");
+
+    let (parts, body) = response.await.into_parts();
+
+    assert_eq!(parts.status, StatusCode::OK);
+
+    let response_body: RestApiResponse<Vec<UserDto>> = deserialize_json_body(body).await.unwrap();
+
+    assert_eq!(response_body.0.status, StatusCode::OK);
+
+    let user_dtos = response_body.0.data.unwrap();
+
+    // println!("user_dtos: {:?}", user_dtos);
+    assert!(!user_dtos.is_empty());
+}
+
+#[tokio::test]
+async fn test_get_user_list() {
+    let username = "user0".to_string();
+
+    let payload = SearchUserDto {
+        username: Some(username),
+        id: None,
+        email: None,
+    };
+
+    let response = request_with_auth_and_body(Method::POST, "/user/list", &payload);
 
     let (parts, body) = response.await.into_parts();
 

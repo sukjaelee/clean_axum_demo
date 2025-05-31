@@ -1,10 +1,11 @@
 // Domain model definition for user entities.
 // Represents core user attributes and metadata in the system.
 
+use sqlx::FromRow;
 use time::OffsetDateTime;
 
 /// Domain model representing a user in the application.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, FromRow)]
 pub struct User {
     pub id: String,
     pub username: String,

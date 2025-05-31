@@ -1,6 +1,6 @@
 use super::{
     domain::{repository::UserRepository, service::UserServiceTrait},
-    dto::{CreateUserMultipartDto, UpdateUserDto, UserDto},
+    dto::{CreateUserMultipartDto, SearchUserDto, UpdateUserDto, UserDto},
     queries::UserRepo,
 };
 use crate::{
@@ -52,6 +52,28 @@ impl UserServiceTrait for UserService {
         }
     }
 
+    /// Retrieves user list by condition
+    /// Returns a vector of UserDto objects.
+    async fn get_user_list(
+        &self,
+        search_user_dto: SearchUserDto,
+    ) -> Result<Vec<UserDto>, AppError> {
+        match self
+            .repo
+            .find_list(self.pool.clone(), search_user_dto)
+            .await
+        {
+            Ok(users) => {
+                let user_dtos: Vec<UserDto> = users.into_iter().map(Into::into).collect();
+                Ok(user_dtos)
+            }
+            Err(err) => {
+                tracing::error!("Error fetching users: {err}");
+                Err(AppError::DatabaseError(err))
+            }
+        }
+    }
+
     /// Retrieves all users.
     /// Returns a vector of UserDto objects.
     async fn get_users(&self) -> Result<Vec<UserDto>, AppError> {
@@ -66,7 +88,6 @@ impl UserServiceTrait for UserService {
             }
         }
     }
-
     /// Creates a new user.
     /// Takes a CreateUserMultipartDto object and an optional UpdateFile object.
     async fn create_user(

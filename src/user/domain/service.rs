@@ -4,7 +4,7 @@
 use crate::{
     common::error::AppError,
     file::dto::UpdateFile,
-    user::dto::{CreateUserMultipartDto, UpdateUserDto, UserDto},
+    user::dto::{CreateUserMultipartDto, SearchUserDto, UpdateUserDto, UserDto},
 };
 
 use async_trait::async_trait;
@@ -15,6 +15,10 @@ use async_trait::async_trait;
 pub trait UserServiceTrait: Send + Sync {
     /// Retrieves a user by their unique identifier.
     async fn get_user_by_id(&self, id: String) -> Result<UserDto, AppError>;
+
+    /// Retrieves user list by condition
+    async fn get_user_list(&self, search_user_dto: SearchUserDto)
+        -> Result<Vec<UserDto>, AppError>;
 
     /// Retrieves all users.
     async fn get_users(&self) -> Result<Vec<UserDto>, AppError>;

@@ -2,6 +2,11 @@
 //! This includes enums for device status and OS, as well as the core `Device` struct.
 
 use serde::{Deserialize, Serialize};
+use sqlx::decode::Decode;
+use sqlx::mysql::MySql;
+use sqlx::mysql::MySqlValueRef;
+use sqlx::FromRow;
+use sqlx::Type;
 use std::{fmt, str::FromStr};
 use time::OffsetDateTime;
 use utoipa::ToSchema;
@@ -56,6 +61,23 @@ impl From<String> for DeviceStatus {
     }
 }
 
+impl<'r> Decode<'r, MySql> for DeviceStatus {
+    fn decode(value: MySqlValueRef<'r>) -> Result<Self, sqlx::error::BoxDynError> {
+        let s = <&str as Decode<MySql>>::decode(value)?;
+        Ok(DeviceStatus::from_str(s)?)
+    }
+}
+
+impl Type<MySql> for DeviceStatus {
+    fn type_info() -> sqlx::mysql::MySqlTypeInfo {
+        <&str as Type<MySql>>::type_info()
+    }
+
+    fn compatible(ty: &sqlx::mysql::MySqlTypeInfo) -> bool {
+        <&str as Type<MySql>>::compatible(ty)
+    }
+}
+
 #[allow(clippy::upper_case_acronyms)]
 /// Enum representing the supported operating systems of a device.
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -93,8 +115,25 @@ impl From<String> for DeviceOS {
     }
 }
 
+impl<'r> Decode<'r, MySql> for DeviceOS {
+    fn decode(value: MySqlValueRef<'r>) -> Result<Self, sqlx::error::BoxDynError> {
+        let s = <&str as Decode<MySql>>::decode(value)?;
+        Ok(DeviceOS::from_str(s)?)
+    }
+}
+
+impl Type<MySql> for DeviceOS {
+    fn type_info() -> sqlx::mysql::MySqlTypeInfo {
+        <&str as Type<MySql>>::type_info()
+    }
+
+    fn compatible(ty: &sqlx::mysql::MySqlTypeInfo) -> bool {
+        <&str as Type<MySql>>::compatible(ty)
+    }
+}
+
 /// Domain model representing a device entity.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, FromRow)]
 pub struct Device {
     pub id: String,
     pub user_id: String,

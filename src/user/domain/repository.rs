@@ -2,7 +2,7 @@
 //! the database operations related to user entities.
 
 use super::model::User;
-use crate::user::dto::{CreateUserMultipartDto, UpdateUserDto};
+use crate::user::dto::{CreateUserMultipartDto, SearchUserDto, UpdateUserDto};
 
 use async_trait::async_trait;
 use sqlx::{MySql, Pool, Transaction};
@@ -16,6 +16,13 @@ pub trait UserRepository: Send + Sync {
 
     /// Finds a user by their unique identifier.
     async fn find_by_id(&self, pool: Pool<MySql>, id: String) -> Result<Option<User>, sqlx::Error>;
+
+    /// Finds user list by condition
+    async fn find_list(
+        &self,
+        pool: Pool<MySql>,
+        search_user_dto: SearchUserDto,
+    ) -> Result<Vec<User>, sqlx::Error>;
 
     /// Creates a new user record using the provided data within an active transaction.
     async fn create(

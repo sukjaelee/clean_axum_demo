@@ -5,12 +5,15 @@ use sqlx::QueryBuilder;
 use sqlx::Transaction;
 use uuid::Uuid;
 
-
 use crate::device::domain::model::Device;
 use crate::device::domain::repository::DeviceRepository;
 use crate::device::dto::{CreateDeviceDto, UpdateDeviceDto, UpdateManyDevicesDto};
 
 pub struct DeviceRepo;
+
+const FIND_DEVICE_INFO_QUERY: &str = r#"
+    SELECT id, user_id, name, status, device_os, registered_at, created_by, created_at, modified_by, modified_at FROM devices WHERE id = ?
+    "#;
 
 #[async_trait]
 impl DeviceRepository for DeviceRepo {
@@ -24,13 +27,15 @@ impl DeviceRepository for DeviceRepo {
         Ok(devices)
     }
 
-    async fn find_by_id(&self, pool: Pool<MySql>, id: String) -> Result<Option<Device>, sqlx::Error> {
-        let device = sqlx::query_as!(Device, 
-            r#"SELECT id, user_id, name, status, device_os, registered_at, created_by, created_at, modified_by, modified_at FROM devices WHERE id = ?"#,
-            id
-        )
-        .fetch_optional(&pool)
-        .await?;
+    async fn find_by_id(
+        &self,
+        pool: Pool<MySql>,
+        id: String,
+    ) -> Result<Option<Device>, sqlx::Error> {
+        let device = sqlx::query_as::<_, Device>(FIND_DEVICE_INFO_QUERY)
+            .bind(id)
+            .fetch_optional(&pool)
+            .await?;
 
         Ok(device)
     }
@@ -104,12 +109,10 @@ impl DeviceRepository for DeviceRepo {
             let query = builder.build();
             query.execute(&mut **tx).await?;
 
-            let updated_device = sqlx::query_as!(Device,
-                r#"SELECT id, user_id, name, status, device_os, registered_at, created_by, created_at, modified_by, modified_at FROM devices WHERE id = ?"#,
-                &id
-            )
-            .fetch_one(&mut **tx)
-            .await?;
+            let updated_device = sqlx::query_as::<_, Device>(FIND_DEVICE_INFO_QUERY)
+                .bind(&id)
+                .fetch_one(&mut **tx)
+                .await?;
 
             return Ok(Some(updated_device));
         }
@@ -125,7 +128,7 @@ impl DeviceRepository for DeviceRepo {
         update_devices: UpdateManyDevicesDto,
     ) -> Result<(), sqlx::Error> {
         let mut builder = QueryBuilder::<MySql>::new(
-            r#"INSERT INTO devices (id, user_id, name, status, device_os, registered_at, created_by, created_at, modified_by, modified_at)"#
+            r#"INSERT INTO devices (id, user_id, name, status, device_os, registered_at, created_by, created_at, modified_by, modified_at)"#,
         );
 
         let now = time::OffsetDateTime::now_utc();
@@ -156,7 +159,7 @@ impl DeviceRepository for DeviceRepo {
             device_os = VALUES(device_os),
             modified_by = VALUES(modified_by),
             modified_at = VALUES(modified_at)
-            "#
+            "#,
         );
 
         let query = builder.build();
@@ -165,7 +168,11 @@ impl DeviceRepository for DeviceRepo {
         Ok(())
     }
 
-    async fn delete(&self, tx: &mut Transaction<'_, MySql>, id: String) -> Result<bool, sqlx::Error> {
+    async fn delete(
+        &self,
+        tx: &mut Transaction<'_, MySql>,
+        id: String,
+    ) -> Result<bool, sqlx::Error> {
         let res = sqlx::query!(r#"DELETE FROM devices WHERE id = ?"#, id)
             .execute(&mut **tx)
             .await?;

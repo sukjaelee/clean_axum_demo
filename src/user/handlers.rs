@@ -14,6 +14,8 @@ use axum::{
 
 use validator::Validate;
 
+use super::dto::SearchUserDto;
+
 #[utoipa::path(
     get,
     path = "/user/{id}",
@@ -26,6 +28,21 @@ pub async fn get_user_by_id(
 ) -> Result<impl IntoResponse, AppError> {
     let user = state.user_service.get_user_by_id(id).await?;
     Ok(RestApiResponse::success(user))
+}
+
+#[utoipa::path(
+    post,
+    path = "/user/list",
+    request_body = SearchUserDto,
+    responses((status = 200, description = "List users by condition", body = [UserDto])),
+    tag = "Users"
+)]
+pub async fn get_user_list(
+    State(state): State<AppState>,
+    Json(payload): Json<SearchUserDto>,
+) -> Result<impl IntoResponse, AppError> {
+    let users = state.user_service.get_user_list(payload).await?;
+    Ok(RestApiResponse::success(users))
 }
 
 #[utoipa::path(

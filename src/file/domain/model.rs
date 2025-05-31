@@ -3,6 +3,7 @@
 //! used to represent file metadata in the business logic layer.
 
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 use std::{fmt, str::FromStr};
 use time::OffsetDateTime;
 use utoipa::ToSchema;
@@ -49,7 +50,7 @@ impl From<String> for FileType {
 }
 
 /// Domain model representing metadata for a file uploaded by a user.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, FromRow)]
 pub struct UploadedFile {
     pub id: String,
     pub user_id: String,

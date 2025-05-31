@@ -1,6 +1,6 @@
 use super::handlers::*;
 use crate::common::app_state::AppState;
-use crate::user::dto::{CreateUserMultipartDto, UpdateUserDto, UserDto};
+use crate::user::dto::{CreateUserMultipartDto, SearchUserDto, UpdateUserDto, UserDto};
 
 use axum::{
     routing::{delete, get, post, put},
@@ -21,7 +21,7 @@ use utoipa::{
         update_user,
         delete_user,
     ),
-    components(schemas(UserDto, CreateUserMultipartDto, UpdateUserDto)),
+    components(schemas(UserDto, SearchUserDto, CreateUserMultipartDto, UpdateUserDto)),
     tags(
         (name = "Users", description = "User management endpoints")
     ),
@@ -53,6 +53,7 @@ pub fn user_routes() -> Router<AppState> {
     Router::new()
         .route("/", get(get_users))
         .route("/", post(create_user))
+        .route("/list", post(get_user_list))
         .route("/{id}", get(get_user_by_id))
         .route("/{id}", put(update_user))
         .route("/{id}", delete(delete_user))
