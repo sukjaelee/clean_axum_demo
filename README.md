@@ -49,8 +49,6 @@ Choose your preferred setup:
      DATABASE_URL=mysql://user:password@localhost/clean_axum_demo
      JWT_SECRET_KEY=your_super_secret_key
      SERVICE_PORT=8080
-     OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
-     OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
      ```
   3. **Prepare SQLx (offline mode with validation):**
      ```bash
