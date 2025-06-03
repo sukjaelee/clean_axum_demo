@@ -23,6 +23,7 @@ const FIND_USER_QUERY: &str = r#"
     FROM users u
     LEFT JOIN uploaded_files uf 
             ON uf.user_id = u.id and uf.file_type = 'profile_picture'
+    WHERE 1=1
     "#;
 
 const FIND_USER_INFO_QUERY: &str = r#"

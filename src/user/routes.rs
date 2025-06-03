@@ -17,6 +17,7 @@ use utoipa::{
     paths(
         get_user_by_id,
         get_users,
+        get_user_list,
         create_user,
         update_user,
         delete_user,
