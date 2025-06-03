@@ -5,4 +5,6 @@ pub mod dto;
 pub mod error;
 pub mod hash_util;
 pub mod jwt;
+#[cfg(feature = "opentelemetry")]
+pub mod opentelemetry;
 pub mod ts_format;

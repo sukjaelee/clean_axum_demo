@@ -10,6 +10,7 @@ A **modern, clean-architecture Rust API server template** built with Axum and SQ
 - JWT authentication & protected routes
 - File upload and secure asset serving
 - Swagger UI documentation (utoipa)
+- OpenTelemetry distributed tracing and metrics instrumentation
 
 ## 🛠 Getting Started
 
@@ -48,6 +49,8 @@ Choose your preferred setup:
      DATABASE_URL=mysql://user:password@localhost/clean_axum_demo
      JWT_SECRET_KEY=your_super_secret_key
      SERVICE_PORT=8080
+     OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+     OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
      ```
   3. **Prepare SQLx (offline mode with validation):**
      ```bash
@@ -118,6 +121,7 @@ Recommended layout:
 │   │   ├── error.rs              # Defines AppError enum and error mappers
 │   │   ├── hash_util.rs          # Hashing utilities (e.g., bcrypt)
 │   │   ├── jwt.rs                # JWT encoding/decoding and validation
+│   │   ├── opentelemetry.rs      # OpenTelemetry setup
 │   │   └── ts_format.rs          # Custom timestamp formatting for serialization
 │   ├── lib.rs               # Declares top-level modules like app, auth, user, etc.
 │   ├── app.rs               # Axum router and middleware setup
@@ -239,10 +243,41 @@ Below is the Entity Relationship Diagram (ERD) illustrating the database structu
 }
 ```
 
+### OpenTelemetry Feature
+
+This project supports distributed tracing, logging, and metrics via OpenTelemetry. To enable and use this feature, follow these steps:
+
+1. Run Jaeger (OTLP-compatible collector):
+
+   ```bash
+   docker run --rm --name jaeger \
+     -e COLLECTOR_OTLP_ENABLED=true \
+     -p 16686:16686 \
+     -p 4317:4317 \
+     -p 4318:4318 \
+     -p 5778:5778 \
+     -p 9411:9411 \
+     jaegertracing/jaeger:2.6.0
+   ```
+
+   Access the Jaeger UI at [http://localhost:16686](http://localhost:16686).
+
+2. Enable OpenTelemetry when running or building the service:
+
+   - To run with OpenTelemetry:
+     ```bash
+     cargo run --features opentelemetry
+     ```
+   - To build with OpenTelemetry:
+     ```bash
+     cargo build --features opentelemetry
+     ```
+
+For more information, see the [Jaeger Getting Started guide](https://www.jaegertracing.io/docs/2.6/getting-started/).
+
 ## 🚧 Roadmap & Future Enhancements
 
 - **Hexagonal architecture:** Separate into domain, infra, app, and web crates for improved decoupling and testability
-- **OpenTelemetry:** Distributed tracing, logging, and metrics integration
 - **PostgreSQL migration:** Native UUID support, advanced types, and enhanced scalability
 - **gRPC support:** Enable machine-to-machine APIs
 - **RBAC:** Role-based access controls

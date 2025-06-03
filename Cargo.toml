@@ -22,8 +22,6 @@ sqlx = { version = "0.8.3", features = [
 ] }
 thiserror = "1.0.58"
 time = { version = "0.3.34", features = ["serde"] }
-tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 tower = { version = "0.5.2", features = ["timeout"] }
 tower-http = { version = "0.6.2", features = ["cors", "trace", "fs"] }
 utoipa = { version = "5.3.1", features = ["axum_extras", "uuid", "time"] }
@@ -38,3 +36,29 @@ argon2 = "0.5.3"
 jsonwebtoken = "9.3.1"
 chrono = "0.4.40"
 dotenvy = "0.15.7"
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = [
+    "env-filter",
+    "registry",
+    "std",
+    "fmt",
+    "chrono",
+] }
+
+# Optional OpenTelemetry-related crates (all `optional = true`)
+opentelemetry = { version = "0.30.0", optional = true }
+opentelemetry_sdk = { version = "0.30.0", optional = true }
+opentelemetry-otlp = { version = "0.30", features = [
+    "http-proto",
+], optional = true }
+opentelemetry-appender-tracing = { version = "0.30.0", optional = true }
+tracing-opentelemetry = { version = "0.31.0", optional = true }
+
+[features]
+opentelemetry = [
+    "dep:opentelemetry",
+    "dep:opentelemetry_sdk",
+    "dep:opentelemetry-otlp",
+    "dep:opentelemetry-appender-tracing",
+    "dep:tracing-opentelemetry",
+]

@@ -109,7 +109,7 @@ pub fn create_router(state: AppState) -> Router {
                     tracing::info_span!(
                         "request",
                         method = %req.method(),
-                        uri = %req.uri()
+                        uri = %req.uri(),
                     )
                 })
                 .on_response(

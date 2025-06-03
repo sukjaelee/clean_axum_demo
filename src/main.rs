@@ -1,9 +1,15 @@
 use clean_axum_demo::{app::create_router, common};
 use common::{
-    bootstrap::{build_app_state, setup_tracing, shutdown_signal},
+    bootstrap::{build_app_state, shutdown_signal},
     config::{setup_database, Config},
 };
 use tracing::info;
+
+#[cfg(not(feature = "opentelemetry"))]
+use common::bootstrap::setup_tracing;
+
+#[cfg(feature = "opentelemetry")]
+use common::opentelemetry::{setup_tracing_opentelemetry, shutdown_opentelemetry};
 
 /// Main entry point for the application.
 /// It sets up the database connection, initializes the server, and starts listening for requests.
@@ -14,8 +20,18 @@ use tracing::info;
 /// # Panics
 /// Panics if the environment variables are not set correctly or if the server fails to start.
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    #[cfg(not(feature = "opentelemetry"))]
     setup_tracing();
+
+    #[cfg(feature = "opentelemetry")]
+    let opentelemetry_tracer_provider = {
+        let provider = setup_tracing_opentelemetry();
+        // Startup span to ensure at least one span is generated and exported
+        let span = tracing::info_span!("startup");
+        let _enter = span.enter();
+        provider
+    };
 
     let config = Config::from_env()?;
     let pool = setup_database(&config).await?;
@@ -32,7 +48,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_graceful_shutdown(shutdown_signal())
         .await?;
 
-    info!("Server shutdown complete");
+    #[cfg(feature = "opentelemetry")]
+    shutdown_opentelemetry(opentelemetry_tracer_provider)?;
 
     Ok(())
 }
