@@ -241,7 +241,7 @@ Below is the Entity Relationship Diagram (ERD) illustrating the database structu
 }
 ```
 
-### OpenTelemetry Feature
+### 📡 OpenTelemetry Feature
 
 This project supports distributed tracing, logging, and metrics via OpenTelemetry. To enable and use this feature, follow these steps:
 
