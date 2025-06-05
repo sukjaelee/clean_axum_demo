@@ -1,8 +1,23 @@
+use chrono::{DateTime, NaiveDateTime, Utc};
 use serde::{self, Deserialize, Deserializer, Serializer};
-use time::{format_description::well_known::Rfc3339, OffsetDateTime};
+use time::{format_description::well_known::Rfc3339, OffsetDateTime, PrimitiveDateTime};
 
-pub const TIMESTAMP_FORMAT: &[time::format_description::FormatItem<'_>] =
-    time::macros::format_description!("[year]-[month]-[day] [hour]:[minute]:[second]");
+// use this in dto timestamp fields
+pub fn convert_naive_to_offset(value: NaiveDateTime) -> OffsetDateTime {
+    OffsetDateTime::from_unix_timestamp(value.and_utc().timestamp()).unwrap()
+}
+
+// use this in updating timestamp fields
+pub fn convert_offset_to_naive(value: OffsetDateTime) -> Option<DateTime<Utc>> {
+    let secs = value.unix_timestamp();
+    let nanos = value.nanosecond();
+    DateTime::from_timestamp(secs, nanos)
+}
+
+// use this in inserting timestamp fields
+pub fn convert_offset_to_primitive(value: Option<OffsetDateTime>) -> Option<PrimitiveDateTime> {
+    value.map(|v| v.date().with_time(v.time()))
+}
 
 // OffsetDateTime
 pub fn serialize<S>(date: &OffsetDateTime, serializer: S) -> Result<S::Ok, S::Error>

@@ -3,6 +3,8 @@ use time::OffsetDateTime;
 use utoipa::ToSchema;
 use validator::Validate;
 
+use crate::common::ts_format::convert_naive_to_offset;
+
 use super::domain::model::User;
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -27,13 +29,9 @@ impl From<User> for UserDto {
             username: user.username,
             email: user.email,
             created_by: user.created_by,
-            created_at: user.created_at.map(|naive| {
-                OffsetDateTime::from_unix_timestamp(naive.and_utc().timestamp()).unwrap()
-            }),
+            created_at: user.created_at.map(|naive| convert_naive_to_offset(naive)),
             modified_by: user.modified_by,
-            modified_at: user.modified_at.map(|naive| {
-                OffsetDateTime::from_unix_timestamp(naive.and_utc().timestamp()).unwrap()
-            }),
+            modified_at: user.modified_at.map(|naive| convert_naive_to_offset(naive)),
             file_id: user.file_id,
             origin_file_name: user.origin_file_name,
         }

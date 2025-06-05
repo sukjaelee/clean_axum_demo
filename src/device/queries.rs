@@ -107,33 +107,27 @@ impl DeviceRepository for DeviceRepo {
 
         if existing.is_some() {
             let mut builder = QueryBuilder::<_>::new("UPDATE devices SET ");
-            let mut updates = Vec::new();
 
-            if let Some(user_id) = device.user_id {
-                updates.push(("user_id", user_id));
-            }
-            if let Some(name) = device.name {
-                updates.push(("name", name));
-            }
-            if let Some(status) = device.status {
-                updates.push(("status", status.to_string()));
-            }
-            if let Some(device_os) = device.device_os {
-                updates.push(("device_os", device_os.to_string()));
-            }
-            // Always update modified_by as it is required
-            updates.push(("modified_by", device.modified_by));
+            builder.push(" modified_at = NOW()");
 
-            for (i, (field, value)) in updates.into_iter().enumerate() {
-                if i > 0 {
-                    builder.push(", ");
-                }
-                builder.push(field).push(" = ").push_bind(value);
+            if let Some(value) = device.user_id {
+                builder.push(", user_id = ").push_bind(value);
+            }
+            if let Some(value) = device.name {
+                builder.push(", name = ").push_bind(value);
+            }
+            if let Some(value) = device.status {
+                builder.push(", status = ").push_bind(value.to_string());
+            }
+            if let Some(value) = device.device_os {
+                builder.push(", device_os = ").push_bind(value.to_string());
             }
 
             builder
-                .push(", modified_at = NOW() WHERE id = ")
-                .push_bind(&id);
+                .push(", modified_by = ")
+                .push_bind(device.modified_by.clone());
+
+            builder.push(" WHERE id = ").push_bind(&id);
             let query = builder.build();
             query.execute(&mut **tx).await?;
 

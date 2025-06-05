@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
+use crate::common::ts_format::convert_naive_to_offset;
+
 use super::domain::model::{Device, DeviceOS, DeviceStatus};
 
 use utoipa::ToSchema;
@@ -30,17 +32,17 @@ impl From<Device> for DeviceDto {
             name: device.name,
             device_os: device.device_os,
             status: device.status,
-            registered_at: device.registered_at.map(|naive| {
-                OffsetDateTime::from_unix_timestamp(naive.and_utc().timestamp()).unwrap()
-            }),
+            registered_at: device
+                .registered_at
+                .map(|naive| convert_naive_to_offset(naive)),
             created_by: device.created_by,
-            created_at: device.created_at.map(|naive| {
-                OffsetDateTime::from_unix_timestamp(naive.and_utc().timestamp()).unwrap()
-            }),
+            created_at: device
+                .created_at
+                .map(|naive| convert_naive_to_offset(naive)),
             modified_by: device.modified_by,
-            modified_at: device.modified_at.map(|naive| {
-                OffsetDateTime::from_unix_timestamp(naive.and_utc().timestamp()).unwrap()
-            }),
+            modified_at: device
+                .modified_at
+                .map(|naive| convert_naive_to_offset(naive)),
         }
     }
 }

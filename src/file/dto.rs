@@ -1,3 +1,5 @@
+use crate::common::ts_format::convert_naive_to_offset;
+
 use super::domain::model::{FileType, UploadedFile};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
@@ -57,13 +59,9 @@ impl From<UploadedFile> for UploadedFileDto {
             file_size: file.file_size,
             file_type: file.file_type,
             created_by: file.created_by,
-            created_at: file.created_at.map(|naive| {
-                OffsetDateTime::from_unix_timestamp(naive.and_utc().timestamp()).unwrap()
-            }),
+            created_at: file.created_at.map(|naive| convert_naive_to_offset(naive)),
             modified_by: file.modified_by,
-            modified_at: file.modified_at.map(|naive| {
-                OffsetDateTime::from_unix_timestamp(naive.and_utc().timestamp()).unwrap()
-            }),
+            modified_at: file.modified_at.map(|naive| convert_naive_to_offset(naive)),
         }
     }
 }
