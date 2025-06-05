@@ -21,13 +21,9 @@ use clean_axum_demo::{
         jwt::{AuthBody, AuthPayload},
     },
 };
-use sqlx::{
-    mysql::{MySqlConnectOptions, MySqlPoolOptions},
-    MySql, Pool,
-};
-use tower::ServiceExt;
 
-use std::str::FromStr;
+use sqlx::{postgres::PgPoolOptions, PgPool};
+use tower::ServiceExt;
 
 static INIT: Once = Once::new();
 
@@ -45,35 +41,22 @@ pub const TEST_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
 fn load_test_env() {
     INIT.call_once(|| {
         from_filename(".env.test").expect("Failed to load .env.test");
+
+        // uncomment below for test debugging
+        // use clean_axum_demo::common::bootstrap::setup_tracing;
+        // setup_tracing();
     });
 }
 
 /// Helper function to set up the test database state
-pub async fn setup_test_db() -> Result<Pool<MySql>, Box<dyn std::error::Error>> {
+pub async fn setup_test_db() -> Result<PgPool, Box<dyn std::error::Error>> {
     load_test_env();
     let config = Config::from_env()?;
 
-    // Create connection options
-    let connect_options = MySqlConnectOptions::from_str(&config.database_url)
-        .map_err(|e| {
-            tracing::error!("Failed to parse database URL: {}", e);
-            e
-        })?
-        .charset(&config.database_charset)
-        .clone();
-
-    // Avoid using problematic timezone settings unless absolutely required
-    // If you must set timezone, do it in SQL after connect
-
-    let pool = MySqlPoolOptions::new()
+    let pool = PgPoolOptions::new()
         .max_connections(config.database_max_connections)
         .min_connections(config.database_min_connections)
-        .connect_with(connect_options)
-        .await?;
-
-    // Optional: set timezone in session
-    sqlx::query(&format!("SET time_zone = '{}'", config.database_time_zone))
-        .execute(&pool)
+        .connect(&config.database_url)
         .await?;
 
     Ok(pool)

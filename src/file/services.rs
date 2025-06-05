@@ -7,8 +7,7 @@ use crate::common::{config::Config, error::AppError};
 
 use regex::Regex;
 
-use sqlx::MySqlPool;
-use sqlx::{MySql, Transaction};
+use sqlx::{Postgres, PgPool, Transaction};
 use std::path::Path as FilePath;
 use std::sync::Arc;
 
@@ -20,7 +19,7 @@ use async_trait::async_trait;
 #[derive(Clone)]
 pub struct FileService {
     config: Config,
-    pool: MySqlPool,
+    pool: PgPool,
     repo: Arc<dyn FileRepository + Send + Sync>,
 }
 
@@ -29,7 +28,7 @@ pub struct FileService {
 impl FileService {
     /// Creates an `Arc`-wrapped `FileService` implementing `FileServiceTrait`.
     /// This allows the service to be used behind a trait object for dependency injection.
-    pub fn create_service(config: Config, pool: MySqlPool) -> Arc<dyn FileServiceTrait> {
+    pub fn create_service(config: Config, pool: PgPool) -> Arc<dyn FileServiceTrait> {
         Arc::new(Self {
             config,
             pool,
@@ -46,7 +45,7 @@ impl FileServiceTrait for FileService {
     /// Returns the uploaded file's metadata.
     async fn process_profile_picture_upload(
         &self,
-        tx: &mut Transaction<'_, MySql>,
+        tx: &mut Transaction<'_, Postgres>,
         upload_file: &UpdateFile,
     ) -> Result<Option<UploadedFileDto>, AppError> {
         FileService::validate_file_upload(

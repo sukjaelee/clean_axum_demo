@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use sqlx::{MySql, Pool, Transaction};
+use sqlx::{PgPool, Postgres, Transaction};
 
 use crate::auth::domain::model::UserAuth;
 use crate::auth::domain::repository::UserAuthRepository;
@@ -9,17 +9,16 @@ pub struct UserAuthRepo;
 impl UserAuthRepository for UserAuthRepo {
     async fn find_by_user_name(
         &self,
-        pool: Pool<MySql>,
+        pool: PgPool,
         user_name: String,
     ) -> Result<Option<UserAuth>, sqlx::Error> {
-        let result = sqlx::query_as!(
-            UserAuth,
+        let result = sqlx::query_as::<_, UserAuth>(
             r#"SELECT ua.user_id, ua.password_hash 
                  FROM user_auth ua
                  JOIN users u ON ua.user_id = u.id
-                 WHERE u.username = ?"#,
-            user_name
+                 WHERE u.username = $1"#,
         )
+        .bind(user_name)
         .fetch_optional(&pool)
         .await?;
 
@@ -28,15 +27,15 @@ impl UserAuthRepository for UserAuthRepo {
 
     async fn create(
         &self,
-        tx: &mut Transaction<'_, MySql>,
+        tx: &mut Transaction<'_, Postgres>,
         user_auth: UserAuth,
     ) -> Result<(), sqlx::Error> {
-        sqlx::query!(
+        sqlx::query(
             r#"INSERT INTO user_auth (user_id, password_hash)
-             VALUES (?, ?)"#,
-            user_auth.user_id,
-            user_auth.password_hash,
+             VALUES ($1, $2)"#,
         )
+        .bind(user_auth.user_id)
+        .bind(user_auth.password_hash)
         .execute(&mut **tx)
         .await?;
 

@@ -2,11 +2,17 @@
 //! This includes the `FileType` enum and `UploadedFile` struct,
 //! used to represent file metadata in the business logic layer.
 
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
-use sqlx::FromRow;
+use sqlx::{
+    decode::Decode,
+    postgres::{PgTypeInfo, PgValueRef},
+    FromRow, Postgres, Type,
+};
 use std::{fmt, str::FromStr};
-use time::OffsetDateTime;
 use utoipa::ToSchema;
+
+use crate::common::error::AppError;
 
 /// Enum representing different categories of files stored in the system.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -30,14 +36,14 @@ impl fmt::Display for FileType {
 }
 
 impl FromStr for FileType {
-    type Err = ();
+    type Err = AppError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "profile_picture" => Ok(FileType::ProfilePicture),
             "document" => Ok(FileType::Document),
             "video" => Ok(FileType::Video),
             "other" => Ok(FileType::Other),
-            _ => Err(()),
+            _ => Err(AppError::ValidationError(format!("Invalid file type: {s}"))),
         }
     }
 }
@@ -46,6 +52,23 @@ impl From<String> for FileType {
     fn from(s: String) -> Self {
         s.parse()
             .unwrap_or_else(|_| panic!("Invalid file type: {}", s))
+    }
+}
+
+impl<'r> Decode<'r, Postgres> for FileType {
+    fn decode(value: PgValueRef<'r>) -> Result<Self, sqlx::error::BoxDynError> {
+        let s = <&str as Decode<Postgres>>::decode(value)?;
+        Ok(FileType::from_str(s)?)
+    }
+}
+
+impl Type<Postgres> for FileType {
+    fn type_info() -> PgTypeInfo {
+        <&str as Type<Postgres>>::type_info()
+    }
+
+    fn compatible(ty: &PgTypeInfo) -> bool {
+        <&str as Type<Postgres>>::compatible(ty)
     }
 }
 
@@ -59,10 +82,10 @@ pub struct UploadedFile {
     pub file_relative_path: String,
     pub file_url: String,
     pub content_type: String,
-    pub file_size: u32,
+    pub file_size: i64,
     pub file_type: FileType,
     pub created_by: Option<String>,
-    pub created_at: Option<OffsetDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     pub modified_by: Option<String>,
-    pub modified_at: Option<OffsetDateTime>,
+    pub modified_at: Option<NaiveDateTime>,
 }

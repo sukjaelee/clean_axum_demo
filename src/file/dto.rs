@@ -34,7 +34,7 @@ pub struct UploadedFileDto {
     pub file_relative_path: String,
     pub file_url: String,
     pub content_type: String,
-    pub file_size: u32,
+    pub file_size: i64,
     pub file_type: FileType,
     pub created_by: Option<String>,
     #[serde(with = "crate::common::ts_format::option")]
@@ -57,9 +57,13 @@ impl From<UploadedFile> for UploadedFileDto {
             file_size: file.file_size,
             file_type: file.file_type,
             created_by: file.created_by,
-            created_at: file.created_at,
+            created_at: file.created_at.map(|naive| {
+                OffsetDateTime::from_unix_timestamp(naive.and_utc().timestamp()).unwrap()
+            }),
             modified_by: file.modified_by,
-            modified_at: file.modified_at,
+            modified_at: file.modified_at.map(|naive| {
+                OffsetDateTime::from_unix_timestamp(naive.and_utc().timestamp()).unwrap()
+            }),
         }
     }
 }

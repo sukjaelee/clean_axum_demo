@@ -4,7 +4,7 @@
 use super::model::UserAuth;
 
 use async_trait::async_trait;
-use sqlx::{MySql, Pool, Transaction};
+use sqlx::{PgPool, Postgres, Transaction};
 
 #[async_trait]
 /// Trait representing the repository contract for user authentication data.
@@ -14,14 +14,14 @@ pub trait UserAuthRepository: Send + Sync {
     /// Returns `Ok(Some(UserAuth))` if found, or `Ok(None)` if not found.
     async fn find_by_user_name(
         &self,
-        pool: Pool<MySql>,
+        pool: PgPool,
         user_name: String,
     ) -> Result<Option<UserAuth>, sqlx::Error>;
 
     /// Inserts a new user authentication record into the database using a transaction.
     async fn create(
         &self,
-        tx: &mut Transaction<'_, MySql>,
+        tx: &mut Transaction<'_, Postgres>,
         user_auth: UserAuth,
     ) -> Result<(), sqlx::Error>;
 }

@@ -12,13 +12,13 @@ use crate::common::{
     jwt::{make_jwt_token, AuthBody, AuthPayload},
 };
 
-use sqlx::MySqlPool;
+use sqlx::PgPool;
 
 /// Service for handling user authentication
 /// and authorization logic.
 #[derive(Clone)]
 pub struct AuthService {
-    pool: MySqlPool,
+    pool: PgPool,
     repo: Arc<dyn UserAuthRepository + Send + Sync>,
 }
 
@@ -27,7 +27,7 @@ pub struct AuthService {
 impl AuthService {
     /// Creates an `Arc`-wrapped `AuthService` implementing `AuthServiceTrait`.
     /// This allows the service to be used behind a trait object for dependency injection.
-    pub fn create_service(pool: MySqlPool) -> Arc<dyn AuthServiceTrait> {
+    pub fn create_service(pool: PgPool) -> Arc<dyn AuthServiceTrait> {
         Arc::new(Self {
             pool,
             repo: Arc::new(UserAuthRepo {}),

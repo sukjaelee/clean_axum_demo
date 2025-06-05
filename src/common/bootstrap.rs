@@ -1,4 +1,4 @@
-use sqlx::MySqlPool; // Import AppError from the appropriate module
+use sqlx::PgPool;
 
 use crate::auth::services::AuthService;
 use crate::common::app_state::AppState;
@@ -10,7 +10,7 @@ use crate::user::services::UserService;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 /// Constructs and wires all application services and returns a configured AppState.
-pub fn build_app_state(pool: MySqlPool, config: Config) -> AppState {
+pub fn build_app_state(pool: PgPool, config: Config) -> AppState {
     let auth_service = AuthService::create_service(pool.clone());
     let file_service = FileService::create_service(config.clone(), pool.clone());
     let user_service = UserService::create_service(pool.clone(), file_service.clone());

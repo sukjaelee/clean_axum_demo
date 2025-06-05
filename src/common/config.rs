@@ -1,18 +1,15 @@
 use serde::Deserialize;
-use sqlx::{
-    mysql::{MySqlConnectOptions, MySqlPoolOptions},
-    MySqlPool,
-};
-use std::{env, str::FromStr};
+use sqlx::{postgres::PgPoolOptions, PgPool};
+use std::env;
+use std::time::Duration;
+use tokio::time::sleep;
 
 /// Config is a struct that holds the configuration for the application.
 #[derive(Default, Clone, Debug, Deserialize)]
 pub struct Config {
     pub database_url: String,
-    pub database_charset: String,
     pub database_max_connections: u32,
     pub database_min_connections: u32,
-    pub database_time_zone: String,
 
     pub service_host: String,
     pub service_port: String,
@@ -36,16 +33,13 @@ impl Config {
 
         Ok(Self {
             database_url: env::var("DATABASE_URL")?,
-            database_charset: env::var("DATABASE_CHARSET")
-                .unwrap_or_else(|_| "utf8mb4".to_string()),
+
             database_max_connections: env::var("DATABASE_MAX_CONNECTIONS")
                 .map(|s| s.parse::<u32>().unwrap_or(5))
                 .unwrap_or(5),
             database_min_connections: env::var("DATABASE_MIN_CONNECTIONS")
                 .map(|s| s.parse::<u32>().unwrap_or(1))
                 .unwrap_or(1),
-            database_time_zone: env::var("DATABASE_TIME_ZONE")
-                .unwrap_or_else(|_| "+00:00".to_string()),
 
             service_host: env::var("SERVICE_HOST")?,
             service_port: env::var("SERVICE_PORT")?,
@@ -65,29 +59,30 @@ impl Config {
 }
 
 /// setup_database initializes the database connection pool.
-pub async fn setup_database(config: &Config) -> Result<MySqlPool, sqlx::Error> {
-    // Create connection options
-    let connect_options = MySqlConnectOptions::from_str(&config.database_url)
-        .map_err(|e| {
-            tracing::error!("Failed to parse database URL: {}", e);
-            e
-        })?
-        .charset(&config.database_charset)
-        .clone();
-
-    // Avoid using problematic timezone settings unless absolutely required
-    // If you must set timezone, do it in SQL after connect
-
-    let pool = MySqlPoolOptions::new()
-        .max_connections(config.database_max_connections)
-        .min_connections(config.database_min_connections)
-        .connect_with(connect_options)
-        .await?;
-
-    // Optional: set timezone in session
-    sqlx::query(&format!("SET time_zone = '{}'", config.database_time_zone))
-        .execute(&pool)
-        .await?;
+pub async fn setup_database(config: &Config) -> Result<PgPool, sqlx::Error> {
+    // Attempt to connect repeatedly, with a small delay, until success (or a max number of tries)
+    let mut attempts = 0;
+    let pool = loop {
+        attempts += 1;
+        match PgPoolOptions::new()
+            .max_connections(config.database_max_connections)
+            .min_connections(config.database_min_connections)
+            .connect(&config.database_url)
+            .await
+        {
+            Ok(pool) => break pool,
+            Err(err) => {
+                if attempts >= 3 {
+                    return Err(err);
+                }
+                eprintln!(
+                    "Postgres not ready yet ({:?}), retrying in 1s… (attempt {}/{})",
+                    err, attempts, 3
+                );
+                sleep(Duration::from_secs(1)).await;
+            }
+        }
+    };
 
     Ok(pool)
 }

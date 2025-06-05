@@ -1,7 +1,7 @@
 use serde::{self, Deserialize, Deserializer, Serializer};
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
-pub const MYSQL_TIMESTAMP_FORMAT: &[time::format_description::FormatItem<'_>] =
+pub const TIMESTAMP_FORMAT: &[time::format_description::FormatItem<'_>] =
     time::macros::format_description!("[year]-[month]-[day] [hour]:[minute]:[second]");
 
 // OffsetDateTime

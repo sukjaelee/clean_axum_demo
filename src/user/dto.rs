@@ -27,9 +27,13 @@ impl From<User> for UserDto {
             username: user.username,
             email: user.email,
             created_by: user.created_by,
-            created_at: user.created_at,
+            created_at: user.created_at.map(|naive| {
+                OffsetDateTime::from_unix_timestamp(naive.and_utc().timestamp()).unwrap()
+            }),
             modified_by: user.modified_by,
-            modified_at: user.modified_at,
+            modified_at: user.modified_at.map(|naive| {
+                OffsetDateTime::from_unix_timestamp(naive.and_utc().timestamp()).unwrap()
+            }),
             file_id: user.file_id,
             origin_file_name: user.origin_file_name,
         }

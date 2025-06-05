@@ -1,18 +1,15 @@
 services:
-  mariadb:
-    image: mariadb:10.9
-    container_name: axum_mariadb
+  postgres:
+    image: postgres:15
+    container_name: axum_postgres
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: testdb
-      MYSQL_USER: testuser
-      MYSQL_PASSWORD: pass
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: testdb
     ports:
-      - "13306:3306"
+      - "5432:5432"
     volumes:
-      - type: tmpfs
-        target: /var/lib/mysql
       - ./db-seed:/docker-entrypoint-initdb.d
 
   app:
@@ -21,11 +18,11 @@ services:
       dockerfile: Dockerfile
     container_name: clean_axum_app
     depends_on:
-      - mariadb
+      - postgres
     ports:
       - "8080:8080"
     env_file:
       - .env      
     environment:
-      - DATABASE_URL=mysql://testuser:pass@axum_mariadb:3306/testdb
+      - DATABASE_URL=postgres://testuser:pass@axum_postgres:5432/testdb
 

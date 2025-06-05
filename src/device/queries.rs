@@ -1,8 +1,6 @@
 use async_trait::async_trait;
-use sqlx::{mysql::MySql, Pool};
-
 use sqlx::QueryBuilder;
-use sqlx::Transaction;
+use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::device::domain::model::Device;
@@ -12,14 +10,42 @@ use crate::device::dto::{CreateDeviceDto, UpdateDeviceDto, UpdateManyDevicesDto}
 pub struct DeviceRepo;
 
 const FIND_DEVICE_INFO_QUERY: &str = r#"
-    SELECT id, user_id, name, status, device_os, registered_at, created_by, created_at, modified_by, modified_at FROM devices WHERE id = ?
+    select
+        id,
+        user_id,
+        name,
+        status,
+        device_os,
+        registered_at,
+        created_by,
+        created_at,
+        modified_by,
+        modified_at
+    from
+        devices
+    where
+        id = $1
     "#;
 
 #[async_trait]
 impl DeviceRepository for DeviceRepo {
-    async fn find_all(&self, pool: Pool<MySql>) -> Result<Vec<Device>, sqlx::Error> {
-        let devices = sqlx::query_as!(Device,
-            r#"SELECT id, user_id, name, status, device_os, registered_at, created_by, created_at, modified_by, modified_at FROM devices"#
+    async fn find_all(&self, pool: PgPool) -> Result<Vec<Device>, sqlx::Error> {
+        let devices = sqlx::query_as::<_, Device>(
+            r#"
+            select
+                id,
+                user_id,
+                name,
+                status,
+                device_os,
+                registered_at,
+                created_by,
+                created_at,
+                modified_by,
+                modified_at
+            from
+                devices
+            "#,
         )
         .fetch_all(&pool)
         .await?;
@@ -27,11 +53,7 @@ impl DeviceRepository for DeviceRepo {
         Ok(devices)
     }
 
-    async fn find_by_id(
-        &self,
-        pool: Pool<MySql>,
-        id: String,
-    ) -> Result<Option<Device>, sqlx::Error> {
+    async fn find_by_id(&self, pool: PgPool, id: String) -> Result<Option<Device>, sqlx::Error> {
         let device = sqlx::query_as::<_, Device>(FIND_DEVICE_INFO_QUERY)
             .bind(id)
             .fetch_optional(&pool)
@@ -42,43 +64,49 @@ impl DeviceRepository for DeviceRepo {
 
     async fn create(
         &self,
-        tx: &mut Transaction<'_, MySql>,
+        tx: &mut Transaction<'_, Postgres>,
         device: CreateDeviceDto,
     ) -> Result<Device, sqlx::Error> {
-        sqlx::query!(r#"INSERT INTO devices (user_id, name, status, device_os, registered_at, created_by, created_at, modified_by, modified_at) VALUES (?, ?, ?, ?, now(), ?, now(), ?, now())"#,
-                     device.user_id,
-                     device.name,
-                     device.status.to_string(),
-                     device.device_os.to_string(),
-                     device.modified_by,
-                     device.modified_by,
+        let id = Uuid::new_v4().to_string();
+
+        sqlx::query(
+            r#"
+            INSERT INTO devices 
+            (id, user_id, name, status, device_os, registered_at, created_by, created_at, modified_by, modified_at) 
+            VALUES ($1, $2, $3, $4, $5, now(), $6, now(), $7, now())
+            "#
         )
+        .bind(id.clone())
+        .bind(device.user_id.clone())
+        .bind(device.name.clone())
+        .bind(device.status.to_string())
+        .bind(device.device_os.to_string())
+        .bind(device.modified_by.clone())
+        .bind(device.modified_by)
         .execute(&mut **tx)
         .await?;
 
-        let inserted_device = sqlx::query_as!(Device,
-            r#"SELECT id, user_id, name, status, device_os, registered_at, created_by, created_at, modified_by, modified_at FROM devices WHERE user_id = ? and name = ?"#,
-            device.user_id,
-            device.name,
-        )
-        .fetch_one(&mut **tx)
-        .await?;
+        let inserted_device = sqlx::query_as::<_, Device>(FIND_DEVICE_INFO_QUERY)
+            .bind(id)
+            .fetch_one(&mut **tx)
+            .await?;
 
         Ok(inserted_device)
     }
 
     async fn update(
         &self,
-        tx: &mut Transaction<'_, MySql>,
+        tx: &mut Transaction<'_, Postgres>,
         id: String,
         device: UpdateDeviceDto,
     ) -> Result<Option<Device>, sqlx::Error> {
-        let existing = sqlx::query!(r#"SELECT id FROM devices WHERE id = ?"#, &id)
+        let existing = sqlx::query(r#"SELECT id FROM devices WHERE id = $1"#)
+            .bind(&id)
             .fetch_optional(&mut **tx)
             .await?;
 
         if existing.is_some() {
-            let mut builder = QueryBuilder::<MySql>::new("UPDATE devices SET ");
+            let mut builder = QueryBuilder::<_>::new("UPDATE devices SET ");
             let mut updates = Vec::new();
 
             if let Some(user_id) = device.user_id {
@@ -122,16 +150,19 @@ impl DeviceRepository for DeviceRepo {
 
     async fn update_many(
         &self,
-        tx: &mut Transaction<'_, MySql>,
+        tx: &mut Transaction<'_, Postgres>,
         user_id: String,
         modified_by: String,
         update_devices: UpdateManyDevicesDto,
     ) -> Result<(), sqlx::Error> {
-        let mut builder = QueryBuilder::<MySql>::new(
-            r#"INSERT INTO devices (id, user_id, name, status, device_os, registered_at, created_by, created_at, modified_by, modified_at)"#,
+        let mut builder = QueryBuilder::<_>::new(
+            r#"
+            INSERT INTO devices 
+            (id, user_id, name, status, device_os, registered_at, created_by, created_at, modified_by, modified_at)
+            "#,
         );
 
-        let now = time::OffsetDateTime::now_utc();
+        let now = chrono::Utc::now().naive_utc();
 
         builder.push_values(update_devices.devices.iter(), |mut b, device| {
             b.push_bind(
@@ -152,13 +183,13 @@ impl DeviceRepository for DeviceRepo {
         });
 
         builder.push(
-            r#" 
-            ON DUPLICATE KEY UPDATE
-            name = VALUES(name),
-            status = VALUES(status),
-            device_os = VALUES(device_os),
-            modified_by = VALUES(modified_by),
-            modified_at = VALUES(modified_at)
+            r#"
+            ON CONFLICT (id) DO UPDATE SET
+            name = EXCLUDED.name,
+            status = EXCLUDED.status,
+            device_os = EXCLUDED.device_os,
+            modified_by = EXCLUDED.modified_by,
+            modified_at = EXCLUDED.modified_at
             "#,
         );
 
@@ -170,10 +201,11 @@ impl DeviceRepository for DeviceRepo {
 
     async fn delete(
         &self,
-        tx: &mut Transaction<'_, MySql>,
+        tx: &mut Transaction<'_, Postgres>,
         id: String,
     ) -> Result<bool, sqlx::Error> {
-        let res = sqlx::query!(r#"DELETE FROM devices WHERE id = ?"#, id)
+        let res = sqlx::query(r#"DELETE FROM devices WHERE id = $1"#)
+            .bind(id)
             .execute(&mut **tx)
             .await?;
 

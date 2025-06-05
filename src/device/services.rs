@@ -7,7 +7,7 @@ use super::{
 };
 
 use async_trait::async_trait;
-use sqlx::MySqlPool;
+use sqlx::PgPool;
 use std::sync::Arc;
 
 /// Service struct for handling device-related operations
@@ -15,7 +15,7 @@ use std::sync::Arc;
 /// It uses a repository pattern to abstract the data access layer.
 #[derive(Clone)]
 pub struct DeviceService {
-    pool: MySqlPool,
+    pool: PgPool,
     repo: Arc<dyn DeviceRepository + Send + Sync>,
 }
 
@@ -24,7 +24,7 @@ pub struct DeviceService {
 impl DeviceService {
     /// Creates an `Arc`-wrapped `DeviceService` implementing `DeviceServiceTrait`.
     /// This allows the service to be used behind a trait object for dependency injection.
-    pub fn create_service(pool: MySqlPool) -> Arc<dyn DeviceServiceTrait> {
+    pub fn create_service(pool: PgPool) -> Arc<dyn DeviceServiceTrait> {
         Arc::new(Self {
             pool,
             repo: Arc::new(DeviceRepo {}),

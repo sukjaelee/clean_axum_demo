@@ -2,7 +2,7 @@
 //! file upload, retrieval, and deletion operations.
 
 use async_trait::async_trait;
-use sqlx::{MySql, Transaction};
+use sqlx::{Postgres, Transaction};
 
 use crate::{
     common::error::AppError,
@@ -18,7 +18,7 @@ pub trait FileServiceTrait: Send + Sync {
     /// Returns the uploaded file's metadata on success.
     async fn process_profile_picture_upload(
         &self,
-        tx: &mut Transaction<'_, MySql>,
+        tx: &mut Transaction<'_, Postgres>,
         upload_file: &UpdateFile,
     ) -> Result<Option<UploadedFileDto>, AppError>;
 

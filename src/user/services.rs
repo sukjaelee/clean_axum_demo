@@ -8,7 +8,7 @@ use crate::{
     file::{domain::service::FileServiceTrait, dto::UpdateFile},
 };
 use async_trait::async_trait;
-use sqlx::MySqlPool;
+use sqlx::PgPool;
 use std::sync::Arc;
 
 /// Service struct for handling user-related operations
@@ -16,7 +16,7 @@ use std::sync::Arc;
 /// It uses a repository pattern to abstract the data access layer.
 #[derive(Clone)]
 pub struct UserService {
-    pub pool: MySqlPool,
+    pub pool: PgPool,
     pub repo: Arc<dyn UserRepository + Send + Sync>,
     pub file_service: Arc<dyn FileServiceTrait>,
 }
@@ -27,7 +27,7 @@ impl UserService {
     /// Creates an `Arc`-wrapped `UserService` implementing `UserServiceTrait`.
     /// This allows the service to be used behind a trait object for dependency injection.
     pub fn create_service(
-        pool: MySqlPool,
+        pool: PgPool,
         file_service: Arc<dyn FileServiceTrait>,
     ) -> Arc<dyn UserServiceTrait> {
         Arc::new(Self {

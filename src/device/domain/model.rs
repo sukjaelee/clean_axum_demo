@@ -1,14 +1,14 @@
 //! Domain model definitions for device-related entities.
 //! This includes enums for device status and OS, as well as the core `Device` struct.
 
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
-use sqlx::decode::Decode;
-use sqlx::mysql::MySql;
-use sqlx::mysql::MySqlValueRef;
-use sqlx::FromRow;
-use sqlx::Type;
+use sqlx::{
+    decode::Decode,
+    postgres::{PgTypeInfo, PgValueRef},
+    FromRow, Postgres, Type,
+};
 use std::{fmt, str::FromStr};
-use time::OffsetDateTime;
 use utoipa::ToSchema;
 
 use crate::common::error::AppError;
@@ -61,20 +61,20 @@ impl From<String> for DeviceStatus {
     }
 }
 
-impl<'r> Decode<'r, MySql> for DeviceStatus {
-    fn decode(value: MySqlValueRef<'r>) -> Result<Self, sqlx::error::BoxDynError> {
-        let s = <&str as Decode<MySql>>::decode(value)?;
+impl<'r> Decode<'r, Postgres> for DeviceStatus {
+    fn decode(value: PgValueRef<'r>) -> Result<Self, sqlx::error::BoxDynError> {
+        let s = <&str as Decode<Postgres>>::decode(value)?;
         Ok(DeviceStatus::from_str(s)?)
     }
 }
 
-impl Type<MySql> for DeviceStatus {
-    fn type_info() -> sqlx::mysql::MySqlTypeInfo {
-        <&str as Type<MySql>>::type_info()
+impl Type<Postgres> for DeviceStatus {
+    fn type_info() -> PgTypeInfo {
+        <&str as Type<Postgres>>::type_info()
     }
 
-    fn compatible(ty: &sqlx::mysql::MySqlTypeInfo) -> bool {
-        <&str as Type<MySql>>::compatible(ty)
+    fn compatible(ty: &PgTypeInfo) -> bool {
+        <&str as Type<Postgres>>::compatible(ty)
     }
 }
 
@@ -115,20 +115,20 @@ impl From<String> for DeviceOS {
     }
 }
 
-impl<'r> Decode<'r, MySql> for DeviceOS {
-    fn decode(value: MySqlValueRef<'r>) -> Result<Self, sqlx::error::BoxDynError> {
-        let s = <&str as Decode<MySql>>::decode(value)?;
+impl<'r> Decode<'r, Postgres> for DeviceOS {
+    fn decode(value: PgValueRef<'r>) -> Result<Self, sqlx::error::BoxDynError> {
+        let s = <&str as Decode<Postgres>>::decode(value)?;
         Ok(DeviceOS::from_str(s)?)
     }
 }
 
-impl Type<MySql> for DeviceOS {
-    fn type_info() -> sqlx::mysql::MySqlTypeInfo {
-        <&str as Type<MySql>>::type_info()
+impl Type<Postgres> for DeviceOS {
+    fn type_info() -> PgTypeInfo {
+        <&str as Type<Postgres>>::type_info()
     }
 
-    fn compatible(ty: &sqlx::mysql::MySqlTypeInfo) -> bool {
-        <&str as Type<MySql>>::compatible(ty)
+    fn compatible(ty: &PgTypeInfo) -> bool {
+        <&str as Type<Postgres>>::compatible(ty)
     }
 }
 
@@ -140,9 +140,9 @@ pub struct Device {
     pub name: String,
     pub device_os: DeviceOS,
     pub status: DeviceStatus,
-    pub registered_at: Option<OffsetDateTime>,
+    pub registered_at: Option<NaiveDateTime>,
     pub created_by: Option<String>,
-    pub created_at: Option<OffsetDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     pub modified_by: Option<String>,
-    pub modified_at: Option<OffsetDateTime>,
+    pub modified_at: Option<NaiveDateTime>,
 }

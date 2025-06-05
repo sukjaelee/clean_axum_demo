@@ -17,7 +17,7 @@ A **modern, clean-architecture Rust API server template** built with Axum and SQ
 ### Prerequisites
 
 - Rust (latest stable)
-- MySQL or MariaDB
+- Postgres
 - Docker & Docker Compose (optional)
 
 ### Quickstart
@@ -40,13 +40,13 @@ Choose your preferred setup:
   1. **Create database tables:**  
      From `db-seed`:
      ```bash
-     mysql -u <user> -p <database> < db-seed/01-tables.sql
-     mysql -u <user> -p <database> < db-seed/02-seed.sql
+     db-seed/01-tables.sql
+     db-seed/02-seed.sql
      ```
   2. **Configure environment:**  
      Edit `.env`:
      ```env
-     DATABASE_URL=mysql://user:password@localhost/clean_axum_demo
+     DATABASE_URL=postgres://testuser:pass@localhost:5432/testdb
      JWT_SECRET_KEY=your_super_secret_key
      SERVICE_PORT=8080
      ```
@@ -143,8 +143,6 @@ Recommended layout:
 > - `src/common/app_state.rs`
 > - `src/common/bootstrap.rs`
 
-Domain modules (`domain`, `dto`, `handlers`, `routes`, `queries`, `services`, etc.) can be automatically generated using [domain_codegen](https://github.com/sukjaelee/domain_codegen).
-
 ### 📦 API Response Format
 
 All endpoints return a consistent JSON envelope:
@@ -171,14 +169,13 @@ Set DB URL, JWT secret, service port, and asset settings.
 Example:
 
 ```env
-DATABASE_URL=mysql://user:pass@localhost/test_db
+DATABASE_URL=postgres://testuser:pass@localhost:5432/testdb
 ```
 
 ### 🧠 Domain-Driven Design
 
 - Domain models are plain Rust structs/enums
 - Business logic resides in domain services or model methods
-- Core logic is free from framework or DB coupling
 
 ### 🔄 Use Case Isolation & Dependency Inversion
 
@@ -189,7 +186,6 @@ DATABASE_URL=mysql://user:pass@localhost/test_db
 ### 🔌 Infrastructure Layer
 
 - SQLx for DB access with compile-time checked queries
-- UUIDs stored as `CHAR(36)` (MySQL/MariaDB)
 - Queries reside in each domain's `db/` or `repository.rs`
 
 ### 🧭 QueryBuilder vs. Static Queries
@@ -275,8 +271,6 @@ For more information, see the [Jaeger Getting Started guide](https://www.jaegert
 
 ## 🚧 Roadmap & Future Enhancements
 
-- **Hexagonal architecture:** Separate into domain, infra, app, and web crates for improved decoupling and testability
-- **PostgreSQL migration:** Native UUID support, advanced types, and enhanced scalability
 - **gRPC support:** Enable machine-to-machine APIs
 - **RBAC:** Role-based access controls
 - **Expanded documentation:** Complete schema and deeper infrastructure insights

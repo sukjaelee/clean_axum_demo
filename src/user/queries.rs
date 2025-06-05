@@ -4,8 +4,9 @@ use crate::user::{
     dto::{CreateUserMultipartDto, UpdateUserDto},
 };
 use async_trait::async_trait;
-use sqlx::FromRow;
-use sqlx::{mysql::MySqlRow, MySql, Pool, QueryBuilder, Transaction};
+
+use sqlx::{PgPool, Postgres, QueryBuilder, Transaction};
+use uuid::Uuid;
 
 pub struct UserRepo;
 
@@ -40,25 +41,24 @@ const FIND_USER_INFO_QUERY: &str = r#"
     FROM users u
     LEFT JOIN uploaded_files uf 
            ON uf.user_id = u.id and uf.file_type = 'profile_picture'
-    WHERE u.id = ?
+    WHERE u.id = $1
     "#;
 
 #[async_trait]
 impl UserRepository for UserRepo {
-    async fn find_all(&self, pool: Pool<MySql>) -> Result<Vec<User>, sqlx::Error> {
+    async fn find_all(&self, pool: PgPool) -> Result<Vec<User>, sqlx::Error> {
         let users = sqlx::query_as::<_, User>(FIND_USER_QUERY)
             .fetch_all(&pool)
             .await?;
-
         Ok(users)
     }
 
     async fn find_list(
         &self,
-        pool: Pool<MySql>,
+        pool: PgPool,
         search_user_dto: SearchUserDto,
     ) -> Result<Vec<User>, sqlx::Error> {
-        let mut builder = QueryBuilder::<MySql>::new(FIND_USER_QUERY);
+        let mut builder = QueryBuilder::<_>::new(FIND_USER_QUERY);
 
         if let Some(s) = search_user_dto
             .id
@@ -78,55 +78,44 @@ impl UserRepository for UserRepo {
             builder.push_bind(format!("%{}%", s));
         }
 
-        let rows: Vec<MySqlRow> = builder.build().fetch_all(&pool).await?;
-
-        let users = rows
-            .into_iter()
-            .map(|row: MySqlRow| User::from_row(&row))
-            .collect::<Result<Vec<_>, _>>()?;
-
+        let query = builder.build_query_as::<User>();
+        let users = query.fetch_all(&pool).await?;
         Ok(users)
     }
 
-    async fn find_by_id(&self, pool: Pool<MySql>, id: String) -> Result<Option<User>, sqlx::Error> {
+    async fn find_by_id(&self, pool: PgPool, id: String) -> Result<Option<User>, sqlx::Error> {
         let user = sqlx::query_as::<_, User>(FIND_USER_INFO_QUERY)
             .bind(id)
             .fetch_optional(&pool)
             .await?;
-
         Ok(user)
     }
 
     async fn create(
         &self,
-        tx: &mut Transaction<'_, MySql>,
+        tx: &mut Transaction<'_, Postgres>,
         user: CreateUserMultipartDto,
     ) -> Result<String, sqlx::Error> {
-        sqlx::query!(
-            r#"INSERT INTO users (username, email, created_by, modified_by)
-             VALUES (?, ?, ?, ?)"#,
-            user.username,
-            user.email,
-            user.modified_by,
-            user.modified_by,
+        let id = Uuid::new_v4().to_string();
+
+        sqlx::query(
+            r#"INSERT INTO users (id, username, email, created_by, modified_by)
+             VALUES ($1, $2, $3, $4, $5)"#,
         )
+        .bind(id.clone())
+        .bind(user.username.clone())
+        .bind(user.email.clone())
+        .bind(user.modified_by.clone())
+        .bind(user.modified_by)
         .execute(&mut **tx)
         .await?;
 
-        let record = sqlx::query!(
-            r#"SELECT id FROM users WHERE username = ? AND email = ?"#,
-            user.username,
-            user.email
-        )
-        .fetch_one(&mut **tx)
-        .await?;
-
-        Ok(record.id)
+        Ok(id)
     }
 
     async fn update(
         &self,
-        tx: &mut Transaction<'_, MySql>,
+        tx: &mut Transaction<'_, Postgres>,
         id: String,
         user: UpdateUserDto,
     ) -> Result<Option<User>, sqlx::Error> {
@@ -136,13 +125,19 @@ impl UserRepository for UserRepo {
             .await?;
 
         if existing.is_some() {
-            sqlx::query!(
-                r#"UPDATE users SET username = ?, email = ?, modified_by = ?, modified_at = NOW() WHERE id = ?"#,
-                user.username,
-                user.email,
-                user.modified_by,
-                id.clone()
+            sqlx::query(
+                r#"
+                UPDATE users 
+                SET username = $1,
+                    email = $2, 
+                    modified_by = $3, 
+                    modified_at = NOW() 
+                WHERE id = $4"#,
             )
+            .bind(user.username.clone())
+            .bind(user.email.clone())
+            .bind(user.modified_by.clone())
+            .bind(id.clone())
             .execute(&mut **tx)
             .await?;
 
@@ -153,19 +148,18 @@ impl UserRepository for UserRepo {
 
             return Ok(Some(updated_user));
         }
-
         Ok(None)
     }
 
     async fn delete(
         &self,
-        tx: &mut Transaction<'_, MySql>,
+        tx: &mut Transaction<'_, Postgres>,
         id: String,
     ) -> Result<bool, sqlx::Error> {
-        let res = sqlx::query!(r#"DELETE FROM users WHERE id = ?"#, id)
+        let res = sqlx::query(r#"DELETE FROM users WHERE id = $1"#)
+            .bind(id)
             .execute(&mut **tx)
             .await?;
-
         Ok(res.rows_affected() > 0)
     }
 }
