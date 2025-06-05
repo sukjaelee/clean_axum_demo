@@ -18,6 +18,7 @@ A **modern, clean-architecture Rust API server template** built with Axum and SQ
 
 - Rust (latest stable)
 - Postgres
+- For the MySQL-based version, see [clean_axum_demo_mysql](https://github.com/sukjaelee/clean_axum_demo_mysql)
 - Docker & Docker Compose (optional)
 
 ### Quickstart
