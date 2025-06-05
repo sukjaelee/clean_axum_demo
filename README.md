@@ -188,7 +188,11 @@ Open [http://localhost:8080/docs](http://localhost:8080/docs) in your browser fo
 
 - Request and response DTOs reside in each domain's `dto.rs`.
 - Explicit mapping between DTOs and domain models.
-- Uses `serde` and optionally the [`validator`](https://docs.rs/validator) crate for input validation.
+- Uses `serde` and optionally the [validator](https://docs.rs/validator) crate for input validation.
+
+### Domain Code Autogeneration From a “CREATE TABLE” Script
+
+- [domain_codegen](https://github.com/sukjaelee/domain_codegen) project provides a code generator specifically designed for the clean_axum_demo project. It automatically generates the domain layer structure under gen/, which you can copy and customize as needed.
 
 ---
 
