@@ -175,11 +175,11 @@ Open [http://localhost:8080/docs](http://localhost:8080/docs) in your browser fo
 
 Each domain owns its own `repository.rs` and `queries.rs`.
 
-1. sqlx::query – the dynamic path
+1. `sqlx::query`
    • Runtime-checked
    • Flexibility: Handy when the SQL must be constructed dynamically—adding WHERE clauses on the fly, for instance.
 
-2. sqlx::query! – the compile-time contract
+2. `sqlx::query!`
    • Compile-time-checked: The macro reads your SQL at build time (in “offline mode” if configured) and verifies it against your database schema. Mistyped column names or wrong argument types become compiler errors, not runtime surprises.
    • Automatic type inference: You list your Rust values after the SQL string, and SQLx figures out how to map them to the placeholder types ($1, $2, …).
    • Struct-level safety: If you use query_as!, it also confirms that the columns you select match the fields of your target struct.
