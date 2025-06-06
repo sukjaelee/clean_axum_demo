@@ -98,15 +98,17 @@ impl UserRepository for UserRepo {
     ) -> Result<String, sqlx::Error> {
         let id = Uuid::new_v4().to_string();
 
-        sqlx::query(
-            r#"INSERT INTO users (id, username, email, created_by, modified_by)
-             VALUES ($1, $2, $3, $4, $5)"#,
+        sqlx::query!(
+            r#"
+                INSERT INTO users (id, username, email, created_by, modified_by)
+                VALUES ($1, $2, $3, $4, $5)
+                "#,
+            id.clone(),
+            user.username.clone(),
+            user.email.clone(),
+            user.modified_by.clone(),
+            user.modified_by
         )
-        .bind(id.clone())
-        .bind(user.username.clone())
-        .bind(user.email.clone())
-        .bind(user.modified_by.clone())
-        .bind(user.modified_by)
         .execute(&mut **tx)
         .await?;
 
@@ -125,19 +127,20 @@ impl UserRepository for UserRepo {
             .await?;
 
         if existing.is_some() {
-            sqlx::query(
+            sqlx::query!(
                 r#"
                 UPDATE users 
                 SET username = $1,
                     email = $2, 
                     modified_by = $3, 
                     modified_at = NOW() 
-                WHERE id = $4"#,
+                WHERE id = $4
+                "#,
+                user.username.clone(),
+                user.email.clone(),
+                user.modified_by.clone(),
+                id.clone()
             )
-            .bind(user.username.clone())
-            .bind(user.email.clone())
-            .bind(user.modified_by.clone())
-            .bind(id.clone())
             .execute(&mut **tx)
             .await?;
 
@@ -156,8 +159,7 @@ impl UserRepository for UserRepo {
         tx: &mut Transaction<'_, Postgres>,
         id: String,
     ) -> Result<bool, sqlx::Error> {
-        let res = sqlx::query(r#"DELETE FROM users WHERE id = $1"#)
-            .bind(id)
+        let res = sqlx::query!(r#"DELETE FROM users WHERE id = $1"#, id)
             .execute(&mut **tx)
             .await?;
         Ok(res.rows_affected() > 0)

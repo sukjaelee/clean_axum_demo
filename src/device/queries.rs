@@ -3,6 +3,7 @@ use sqlx::QueryBuilder;
 use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
+use crate::common::date_util::convert_offset_to_naive;
 use crate::device::domain::model::Device;
 use crate::device::domain::repository::DeviceRepository;
 use crate::device::dto::{CreateDeviceDto, UpdateDeviceDto, UpdateManyDevicesDto};
@@ -69,20 +70,21 @@ impl DeviceRepository for DeviceRepo {
     ) -> Result<Device, sqlx::Error> {
         let id = Uuid::new_v4().to_string();
 
-        sqlx::query(
+        sqlx::query!(
             r#"
             INSERT INTO devices 
             (id, user_id, name, status, device_os, registered_at, created_by, created_at, modified_by, modified_at) 
-            VALUES ($1, $2, $3, $4, $5, now(), $6, now(), $7, now())
-            "#
+            VALUES ($1, $2, $3, $4, $5, $6, $7, now(), $8, now())
+            "#,
+            id.clone(),
+            device.user_id.clone(),
+            device.name.clone(),
+            device.status.to_string(),
+            device.device_os.to_string(),
+            device.registered_at.map(convert_offset_to_naive),
+            device.modified_by.clone(),
+            device.modified_by
         )
-        .bind(id.clone())
-        .bind(device.user_id.clone())
-        .bind(device.name.clone())
-        .bind(device.status.to_string())
-        .bind(device.device_os.to_string())
-        .bind(device.modified_by.clone())
-        .bind(device.modified_by)
         .execute(&mut **tx)
         .await?;
 
@@ -100,8 +102,7 @@ impl DeviceRepository for DeviceRepo {
         id: String,
         device: UpdateDeviceDto,
     ) -> Result<Option<Device>, sqlx::Error> {
-        let existing = sqlx::query(r#"SELECT id FROM devices WHERE id = $1"#)
-            .bind(&id)
+        let existing = sqlx::query!(r#"SELECT id FROM devices WHERE id = $1"#, id)
             .fetch_optional(&mut **tx)
             .await?;
 
@@ -121,6 +122,12 @@ impl DeviceRepository for DeviceRepo {
             }
             if let Some(value) = device.device_os {
                 builder.push(", device_os = ").push_bind(value.to_string());
+            }
+
+            if let Some(value) = device.registered_at {
+                builder
+                    .push(", registered_at = ")
+                    .push_bind(convert_offset_to_naive(value));
             }
 
             builder
@@ -198,8 +205,7 @@ impl DeviceRepository for DeviceRepo {
         tx: &mut Transaction<'_, Postgres>,
         id: String,
     ) -> Result<bool, sqlx::Error> {
-        let res = sqlx::query(r#"DELETE FROM devices WHERE id = $1"#)
-            .bind(id)
+        let res = sqlx::query!(r#"DELETE FROM devices WHERE id = $1"#, id)
             .execute(&mut **tx)
             .await?;
 
