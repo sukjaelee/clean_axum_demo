@@ -52,32 +52,36 @@ fn create_swagger_ui() -> SwaggerUi {
 }
 
 pub fn create_router(state: AppState) -> Router {
-    // Create cors middleware
+    // Build a CORS layer that applies to everyone
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
         .allow_origin(Any)
         .allow_headers([AUTHORIZATION, CONTENT_TYPE]);
 
-    // setup handler for errors, cors, timeout, and logging
+    // Create a common middleware stack for error handling, timeouts, and CORS.
     let middleware_stack = ServiceBuilder::new()
         .layer(HandleErrorLayer::new(handle_error))
         .timeout(Duration::from_secs(1800))
-        .layer(cors)
-        .layer(middleware::from_fn(print_request_response));
+        .layer(cors);
 
-    // setup public routes
-    let public_routes = Router::new().nest("/auth", user_auth_routes());
+    // Build a separate “logging layer” that runs `print_request_response`
+    let logging_layer = ServiceBuilder::new().layer(middleware::from_fn(print_request_response));
 
-    // setup protected routes
-    // by default, Multipart limits the request body size to 2MB.
-    // See DefaultBodyLimit for how to configure this limit.
-    // https://docs.rs/axum/latest/axum/extract/struct.Multipart.html
+    // /auth routes (login, register, refresh, etc.) — no logging here
+    let auth_router = Router::new().nest("/auth", user_auth_routes());
+
+    // Protected API routes
     let protected_routes = Router::new()
         .nest("/user", user_routes())
         .nest("/device", device_routes())
         .nest("/file", file_routes())
+        // by default, Multipart limits to 2MB; override with `asset_max_size`
+        // See https://docs.rs/axum/latest/axum/extract/struct.Multipart.html
         .layer(DefaultBodyLimit::max(state.config.asset_max_size))
-        .route_layer(middleware::from_fn(jwt::jwt_auth));
+        // enforce JWT authentication
+        .route_layer(middleware::from_fn(jwt::jwt_auth))
+        // attach logging
+        .layer(logging_layer.clone());
 
     // setup assets routes
     let public_assets_routes = Router::new().nest_service(
@@ -90,7 +94,10 @@ pub fn create_router(state: AppState) -> Router {
             state.config.assets_private_url.as_str(),
             ServeDir::new(state.config.assets_private_path.clone()),
         )
-        .route_layer(middleware::from_fn(jwt::jwt_auth));
+        // enforce JWT authentication
+        .route_layer(middleware::from_fn(jwt::jwt_auth))
+        // attach logging
+        .layer(logging_layer.clone());
 
     // Create the main router
     // and merge all the routes
@@ -98,7 +105,7 @@ pub fn create_router(state: AppState) -> Router {
     // and add the state
     Router::new()
         .route("/health", axum::routing::get(health_check))
-        .merge(public_routes)
+        .merge(auth_router)
         .merge(protected_routes)
         .merge(create_swagger_ui())
         .merge(public_assets_routes)
@@ -178,7 +185,7 @@ where
     };
 
     if let Ok(body) = std::str::from_utf8(&bytes) {
-        tracing::debug!("{direction} body = {body:?}");
+        tracing::info!("{direction} body = {body:?}");
     }
 
     Ok(bytes)
