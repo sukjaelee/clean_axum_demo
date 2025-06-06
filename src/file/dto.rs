@@ -1,4 +1,4 @@
-use crate::common::ts_format::convert_naive_to_offset;
+use crate::common::date_util::convert_naive_to_offset;
 
 use super::domain::model::{FileType, UploadedFile};
 use serde::{Deserialize, Serialize};
@@ -39,11 +39,11 @@ pub struct UploadedFileDto {
     pub file_size: i64,
     pub file_type: FileType,
     pub created_by: Option<String>,
-    #[serde(with = "crate::common::ts_format::option")]
-    pub created_at: Option<OffsetDateTime>,
+    #[serde(with = "crate::common::ts_format")]
+    pub created_at: OffsetDateTime,
     pub modified_by: Option<String>,
-    #[serde(with = "crate::common::ts_format::option")]
-    pub modified_at: Option<OffsetDateTime>,
+    #[serde(with = "crate::common::ts_format")]
+    pub modified_at: OffsetDateTime,
 }
 
 impl From<UploadedFile> for UploadedFileDto {
@@ -59,9 +59,9 @@ impl From<UploadedFile> for UploadedFileDto {
             file_size: file.file_size,
             file_type: file.file_type,
             created_by: file.created_by,
-            created_at: file.created_at.map(|naive| convert_naive_to_offset(naive)),
+            created_at: convert_naive_to_offset(file.created_at),
             modified_by: file.modified_by,
-            modified_at: file.modified_at.map(|naive| convert_naive_to_offset(naive)),
+            modified_at: convert_naive_to_offset(file.modified_at),
         }
     }
 }

@@ -11,6 +11,7 @@ use clean_axum_demo::{
     },
 };
 
+use time::{Duration, OffsetDateTime};
 use uuid::Uuid;
 mod test_helpers;
 use test_helpers::{
@@ -25,6 +26,7 @@ async fn create_test_device() -> DeviceDto {
         user_id: TEST_USER_ID.to_string(),
         device_os: DeviceOS::Android,
         status: DeviceStatus::Active,
+        registered_at: Some(OffsetDateTime::now_utc() + Duration::minutes(30)),
         modified_by: TEST_USER_ID.to_string(),
     };
 
@@ -45,6 +47,7 @@ async fn test_create_device() {
         user_id: TEST_USER_ID.to_string(),
         device_os: DeviceOS::Android,
         status: DeviceStatus::Active,
+        registered_at: Some(OffsetDateTime::now_utc() + Duration::minutes(30)),
         modified_by: TEST_USER_ID.to_string(),
     };
 
@@ -63,6 +66,11 @@ async fn test_create_device() {
     assert_eq!(device_dto.user_id, payload.user_id);
     assert_eq!(device_dto.device_os, payload.device_os);
     assert_eq!(device_dto.status, payload.status);
+    // ignore fractional seconds
+    assert_eq!(
+        device_dto.registered_at.map(|dt| dt.unix_timestamp()),
+        payload.registered_at.map(|dt| dt.unix_timestamp())
+    );
     assert_ne!(device_dto.modified_by, Some(payload.modified_by));
 }
 
@@ -120,6 +128,7 @@ async fn test_update_device() {
         user_id: Some(existent_device.user_id.clone()),
         device_os: Some(DeviceOS::IOS),
         status: Some(DeviceStatus::Decommissioned),
+        registered_at: Some(OffsetDateTime::now_utc() + Duration::minutes(30)),
         modified_by: existent_device.modified_by.clone().unwrap_or_default(),
     };
 
@@ -144,6 +153,11 @@ async fn test_update_device() {
     assert_eq!(Some(response_device.user_id), payload.user_id);
     assert_eq!(Some(response_device.device_os), payload.device_os);
     assert_eq!(Some(response_device.status), payload.status);
+    // ignore fractional seconds
+    assert_eq!(
+        response_device.registered_at.map(|dt| dt.unix_timestamp()),
+        payload.registered_at.map(|dt| dt.unix_timestamp())
+    );
 }
 
 #[tokio::test]

@@ -3,7 +3,7 @@ use time::OffsetDateTime;
 use utoipa::ToSchema;
 use validator::Validate;
 
-use crate::common::ts_format::convert_naive_to_offset;
+use crate::common::date_util::convert_naive_to_offset;
 
 use super::domain::model::User;
 

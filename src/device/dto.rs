@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
-use crate::common::ts_format::convert_naive_to_offset;
+use crate::common::date_util::convert_naive_to_offset;
 
 use super::domain::model::{Device, DeviceOS, DeviceStatus};
 
@@ -53,6 +53,8 @@ pub struct CreateDeviceDto {
     pub user_id: String,
     pub device_os: DeviceOS,
     pub status: DeviceStatus,
+    #[serde(with = "crate::common::ts_format::option")]
+    pub registered_at: Option<OffsetDateTime>,
     pub modified_by: String,
 }
 
@@ -62,6 +64,8 @@ pub struct UpdateDeviceDto {
     pub user_id: Option<String>,
     pub device_os: Option<DeviceOS>,
     pub status: Option<DeviceStatus>,
+    #[serde(with = "crate::common::ts_format::option")]
+    pub registered_at: Option<OffsetDateTime>,
     pub modified_by: String,
 }
 

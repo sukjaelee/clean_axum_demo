@@ -16,7 +16,6 @@ sqlx = { version = "0.8.3", features = [
     "runtime-tokio",
     "macros",
     "uuid",
-    "time",
     "chrono",
     "json",
 ] }

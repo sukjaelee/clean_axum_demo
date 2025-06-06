@@ -85,7 +85,7 @@ pub struct UploadedFile {
     pub file_size: i64,
     pub file_type: FileType,
     pub created_by: Option<String>,
-    pub created_at: Option<NaiveDateTime>,
+    pub created_at: NaiveDateTime,
     pub modified_by: Option<String>,
-    pub modified_at: Option<NaiveDateTime>,
+    pub modified_at: NaiveDateTime,
 }
