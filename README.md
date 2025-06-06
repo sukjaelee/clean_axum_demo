@@ -79,7 +79,6 @@ Recommended layout:
 - Rust (latest stable)
 - PostgreSQL
 - Docker & Docker Compose (optional)
-- For MySQL version, see [clean_axum_demo_mysql](https://github.com/sukjaelee/clean_axum_demo_mysql)
 
 ### Quickstart
 
