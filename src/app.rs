@@ -8,6 +8,7 @@ use axum::{
     },
     middleware::{self, Next},
     response::IntoResponse,
+    response::Response,
     Router,
 };
 use http_body_util::BodyExt;
@@ -38,6 +39,7 @@ use crate::auth::routes::UserAuthApiDoc;
 use crate::device::routes::DeviceApiDoc;
 use crate::file::routes::FileApiDoc;
 use crate::user::routes::UserApiDoc;
+
 use utoipa_swagger_ui::SwaggerUi;
 
 fn create_swagger_ui() -> SwaggerUi {
@@ -157,17 +159,17 @@ async fn print_request_response(
     let bytes = buffer_and_print("request", body).await?;
     let req = Request::from_parts(parts, Body::from(bytes));
 
-    let res = next.run(req).await;
-
-    // Uncomment the following lines to print the response body
-    // let (parts, body) = res.into_parts();
-    // let bytes = buffer_and_print("response", body).await?;
-    // let res = Response::from_parts(parts, Body::from(bytes));
+    let mut res = next.run(req).await;
+    if tracing::enabled!(tracing::Level::DEBUG) {
+        let (parts, body) = res.into_parts();
+        let bytes = buffer_and_print_debug("response", body).await?;
+        res = Response::from_parts(parts, Body::from(bytes));
+    }
 
     Ok(res)
 }
 
-/// Buffer and print the request/response body
+/// Buffer and print the request
 /// This function collects the body data into bytes and prints it to the log.
 async fn buffer_and_print<B>(direction: &str, body: B) -> Result<Bytes, (StatusCode, String)>
 where
@@ -184,8 +186,30 @@ where
         }
     };
 
-    if let Ok(body) = std::str::from_utf8(&bytes) {
-        tracing::info!("{direction} body = {body:?}");
+    if let Ok(body_str) = std::str::from_utf8(&bytes) {
+        tracing::info!("{} body = {:?}", direction, body_str);
+    }
+
+    Ok(bytes)
+}
+
+async fn buffer_and_print_debug<B>(direction: &str, body: B) -> Result<Bytes, (StatusCode, String)>
+where
+    B: axum::body::HttpBody<Data = Bytes>,
+    B::Error: std::fmt::Display,
+{
+    let bytes = match body.collect().await {
+        Ok(collected) => collected.to_bytes(),
+        Err(err) => {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                format!("failed to read {direction} body: {err}"),
+            ));
+        }
+    };
+
+    if let Ok(body_str) = std::str::from_utf8(&bytes) {
+        tracing::debug!("{} body = {:?}", direction, body_str);
     }
 
     Ok(bytes)
