@@ -327,14 +327,6 @@ For details, see the [Jaeger Getting Started guide](https://www.jaegertracing.io
 
 ---
 
-## 🚧 Roadmap
-
-- gRPC support for machine-to-machine APIs
-- Role-Based Access Control (RBAC)
-- Expanded documentation including schema and infrastructure insights
-
----
-
 ## 🤝 Contributing
 
 Contributions are welcome! Feel free to open issues, suggest improvements, or submit pull requests.  
