@@ -165,10 +165,14 @@ Open [http://localhost:8080/docs](http://localhost:8080/docs) in your browser fo
 
 ## 🧠 Domain-Driven Design & Architecture
 
-### Domain Models
+### Domain Module
 
-- Plain Rust structs and enums represent domain entities.
-- Business logic resides within domain services (`domain/service.rs`).
+- `model.rs`: holds your core structs and enums that represent entities or value objects.
+- **Model Type Reference**: Conversions between Rust and PostgreSQL types.  
+  [See SQLx Postgres types mapping](https://docs.rs/sqlx/latest/sqlx/postgres/types/index.html)
+- `repository.rs`: declares the trait(s) that encapsulate persistence operations for the domain (e.g., `UserRepository`).
+- `service.rs`: declares the trait(s) for domain service operations.
+-
 
 ### Repository Layer (Sqlx)
 
