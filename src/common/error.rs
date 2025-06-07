@@ -28,6 +28,9 @@ pub enum AppError {
     #[error("Validation error: {0}")]
     ValidationError(String),
 
+    #[error("Forbidden Request")]
+    Forbidden,
+
     /// Used for file-related errors
     #[error("File size exceeded")]
     FileSizeExceeded,
@@ -60,6 +63,7 @@ impl IntoResponse for AppError {
             AppError::DatabaseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::NotFound(_) => StatusCode::NOT_FOUND,
             AppError::InternalError => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Forbidden => StatusCode::FORBIDDEN,
             AppError::FileSizeExceeded
             | AppError::InvalidFileName
             | AppError::UnsupportedFileExtension => StatusCode::BAD_REQUEST,

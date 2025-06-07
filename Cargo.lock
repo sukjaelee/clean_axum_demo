@@ -297,6 +297,7 @@ dependencies = [
  "dotenvy",
  "http-body-util",
  "jsonwebtoken",
+ "once_cell",
  "opentelemetry",
  "opentelemetry-appender-tracing",
  "opentelemetry-otlp",

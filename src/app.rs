@@ -7,8 +7,7 @@ use axum::{
         Method, StatusCode,
     },
     middleware::{self, Next},
-    response::IntoResponse,
-    response::Response,
+    response::{IntoResponse, Response},
     Router,
 };
 use http_body_util::BodyExt;
@@ -42,6 +41,16 @@ use crate::user::routes::UserApiDoc;
 
 use utoipa_swagger_ui::SwaggerUi;
 
+use once_cell::sync::Lazy;
+use regex::Regex;
+
+/// List of regex patterns representing disallowed content to block in requests.
+/// These patterns are applied to both request bodies and URL query strings.
+/// Used to detect and reject potentially dangerous input (e.g., script tags).
+/// This is just sample. In real app this can be loaded from repository
+pub static FORBIDDEN_PATTERNS: Lazy<Vec<Regex>> =
+    Lazy::new(|| vec![Regex::new(r"(?i)<\s*script\b[^>]*>").unwrap()]);
+
 fn create_swagger_ui() -> SwaggerUi {
     SwaggerUi::new("/docs")
         .url(
@@ -66,11 +75,10 @@ pub fn create_router(state: AppState) -> Router {
         .timeout(Duration::from_secs(1800))
         .layer(cors);
 
-    // Build a separate “logging layer” that runs `print_request_response`
-    let logging_layer = ServiceBuilder::new().layer(middleware::from_fn(print_request_response));
-
     // /auth routes (login, register, refresh, etc.) — no logging here
-    let auth_router = Router::new().nest("/auth", user_auth_routes());
+    let auth_router = Router::new()
+        .nest("/auth", user_auth_routes())
+        .layer(middleware::from_fn(make_request_response_inspecter(false)));
 
     // Protected API routes
     let protected_routes = Router::new()
@@ -82,8 +90,8 @@ pub fn create_router(state: AppState) -> Router {
         .layer(DefaultBodyLimit::max(state.config.asset_max_size))
         // enforce JWT authentication
         .route_layer(middleware::from_fn(jwt::jwt_auth))
-        // attach logging
-        .layer(logging_layer.clone());
+        // attach inspecter
+        .layer(middleware::from_fn(make_request_response_inspecter(true)));
 
     // setup assets routes
     let public_assets_routes = Router::new().nest_service(
@@ -98,8 +106,8 @@ pub fn create_router(state: AppState) -> Router {
         )
         // enforce JWT authentication
         .route_layer(middleware::from_fn(jwt::jwt_auth))
-        // attach logging
-        .layer(logging_layer.clone());
+        // attach inspecter
+        .layer(middleware::from_fn(make_request_response_inspecter(true)));
 
     // Create the main router
     // and merge all the routes
@@ -148,30 +156,59 @@ pub async fn fallback() -> Result<impl IntoResponse, AppError> {
     Ok((StatusCode::NOT_FOUND, "Not Found"))
 }
 
-/// Middleware to print request and response bodies
-/// This function intercepts the request and response, buffers the body, and prints it to the log.
-/// It is used for debugging purposes to inspect the request and response data.
-async fn print_request_response(
-    req: Request,
+/// Middleware that inspects request bodies and URL query strings, as well as response bodies, logging them for debugging, and rejects forbidden content.
+/// Intercepts HTTP requests and responses: buffers bodies and query strings, then logs their content.
+/// Returns a 403 Forbidden error if any forbidden patterns are detected in the request body or query string.
+/// Note: multipart/form-data requests bypass this middleware and must be validated within their handlers.
+fn make_request_response_inspecter(
+    log_enabled: bool,
+) -> impl Fn(
+    Request<Body>,
+    Next,
+) -> std::pin::Pin<
+    Box<dyn std::future::Future<Output = Result<Response, (StatusCode, String)>> + Send>,
+> + Clone
+       + Send
+       + Sync
+       + 'static {
+    move |req, next| {
+        let fut = request_response_inspecter(req, next, log_enabled);
+        Box::pin(fut)
+    }
+}
+
+async fn request_response_inspecter(
+    req: Request<Body>,
     next: Next,
-) -> Result<impl IntoResponse, (StatusCode, String)> {
+    log_enabled: bool,
+) -> Result<Response, (StatusCode, String)> {
+    // inspect forbidden query string
+    if let Some(query) = req.uri().query() {
+        if FORBIDDEN_PATTERNS.iter().any(|re| re.is_match(query)) {
+            return Err((StatusCode::FORBIDDEN, "Forbidden Request".to_string()));
+        }
+    }
+
     let (parts, body) = req.into_parts();
-    let bytes = buffer_and_print("request", body).await?;
+    let bytes = request_inspect_print("request", log_enabled, body).await?;
     let req = Request::from_parts(parts, Body::from(bytes));
 
     let mut res = next.run(req).await;
-    if tracing::enabled!(tracing::Level::DEBUG) {
+    if log_enabled && tracing::enabled!(tracing::Level::DEBUG) {
         let (parts, body) = res.into_parts();
-        let bytes = buffer_and_print_debug("response", body).await?;
+        let bytes = response_print("response", body).await?;
         res = Response::from_parts(parts, Body::from(bytes));
     }
 
     Ok(res)
 }
 
-/// Buffer and print the request
-/// This function collects the body data into bytes and prints it to the log.
-async fn buffer_and_print<B>(direction: &str, body: B) -> Result<Bytes, (StatusCode, String)>
+/// This function inspects forbidden request and collects the body data into bytes and prints it to the log.
+async fn request_inspect_print<B>(
+    direction: &str,
+    log_enabled: bool,
+    body: B,
+) -> Result<Bytes, (StatusCode, String)>
 where
     B: axum::body::HttpBody<Data = Bytes>,
     B::Error: std::fmt::Display,
@@ -187,13 +224,20 @@ where
     };
 
     if let Ok(body_str) = std::str::from_utf8(&bytes) {
-        tracing::info!("{} body = {:?}", direction, body_str);
+        if log_enabled {
+            tracing::info!("{} body = {:?}", direction, body_str);
+        }
+
+        // inspect forbidden request body
+        if FORBIDDEN_PATTERNS.iter().any(|re| re.is_match(body_str)) {
+            return Err((StatusCode::FORBIDDEN, "Forbidden Request".to_string()));
+        }
     }
 
     Ok(bytes)
 }
 
-async fn buffer_and_print_debug<B>(direction: &str, body: B) -> Result<Bytes, (StatusCode, String)>
+async fn response_print<B>(direction: &str, body: B) -> Result<Bytes, (StatusCode, String)>
 where
     B: axum::body::HttpBody<Data = Bytes>,
     B::Error: std::fmt::Display,

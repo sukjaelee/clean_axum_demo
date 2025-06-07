@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
+    app::FORBIDDEN_PATTERNS,
     common::{app_state::AppState, dto::RestApiResponse, error::AppError, jwt::Claims},
     file::dto::UpdateFile,
     user::dto::{CreateUserMultipartDto, UpdateUserDto, UserDto},
@@ -96,7 +97,15 @@ pub async fn create_user(
             }
             Some(name) => {
                 let name = name.to_string();
+                if FORBIDDEN_PATTERNS.iter().any(|re| re.is_match(&name)) {
+                    return Err(AppError::Forbidden);
+                }
+
                 let value = field.text().await.map_err(map_err_internal)?;
+                if FORBIDDEN_PATTERNS.iter().any(|re| re.is_match(&value)) {
+                    return Err(AppError::Forbidden);
+                }
+
                 fields.insert(name, value);
             }
             None => {}
