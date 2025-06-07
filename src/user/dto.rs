@@ -1,9 +1,7 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
 use utoipa::ToSchema;
 use validator::Validate;
-
-use crate::common::date_util::convert_naive_to_offset;
 
 use super::domain::model::User;
 
@@ -14,10 +12,10 @@ pub struct UserDto {
     pub email: Option<String>,
     pub created_by: Option<String>,
     #[serde(with = "crate::common::ts_format::option")]
-    pub created_at: Option<OffsetDateTime>,
+    pub created_at: Option<DateTime<Utc>>,
     pub modified_by: Option<String>,
     #[serde(with = "crate::common::ts_format::option")]
-    pub modified_at: Option<OffsetDateTime>,
+    pub modified_at: Option<DateTime<Utc>>,
     pub file_id: Option<String>,
     pub origin_file_name: Option<String>,
 }
@@ -29,9 +27,9 @@ impl From<User> for UserDto {
             username: user.username,
             email: user.email,
             created_by: user.created_by,
-            created_at: user.created_at.map(|naive| convert_naive_to_offset(naive)),
+            created_at: user.created_at,
             modified_by: user.modified_by,
-            modified_at: user.modified_at.map(|naive| convert_naive_to_offset(naive)),
+            modified_at: user.modified_at,
             file_id: user.file_id,
             origin_file_name: user.origin_file_name,
         }

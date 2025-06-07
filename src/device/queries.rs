@@ -3,7 +3,6 @@ use sqlx::QueryBuilder;
 use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
-use crate::common::date_util::convert_offset_to_naive;
 use crate::device::domain::model::Device;
 use crate::device::domain::repository::DeviceRepository;
 use crate::device::dto::{CreateDeviceDto, UpdateDeviceDto, UpdateManyDevicesDto};
@@ -81,7 +80,7 @@ impl DeviceRepository for DeviceRepo {
             device.name.clone(),
             device.status.to_string(),
             device.device_os.to_string(),
-            device.registered_at.map(convert_offset_to_naive),
+            device.registered_at,
             device.modified_by.clone(),
             device.modified_by
         )
@@ -123,11 +122,8 @@ impl DeviceRepository for DeviceRepo {
             if let Some(value) = device.device_os {
                 builder.push(", device_os = ").push_bind(value.to_string());
             }
-
             if let Some(value) = device.registered_at {
-                builder
-                    .push(", registered_at = ")
-                    .push_bind(convert_offset_to_naive(value));
+                builder.push(", registered_at = ").push_bind(value);
             }
 
             builder

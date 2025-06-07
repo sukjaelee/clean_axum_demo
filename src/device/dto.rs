@@ -1,7 +1,5 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
-
-use crate::common::date_util::convert_naive_to_offset;
 
 use super::domain::model::{Device, DeviceOS, DeviceStatus};
 
@@ -15,13 +13,13 @@ pub struct DeviceDto {
     pub device_os: DeviceOS,
     pub status: DeviceStatus,
     #[serde(with = "crate::common::ts_format::option")]
-    pub registered_at: Option<OffsetDateTime>,
+    pub registered_at: Option<DateTime<Utc>>,
     pub created_by: Option<String>,
     #[serde(with = "crate::common::ts_format::option")]
-    pub created_at: Option<OffsetDateTime>,
+    pub created_at: Option<DateTime<Utc>>,
     pub modified_by: Option<String>,
     #[serde(with = "crate::common::ts_format::option")]
-    pub modified_at: Option<OffsetDateTime>,
+    pub modified_at: Option<DateTime<Utc>>,
 }
 
 impl From<Device> for DeviceDto {
@@ -32,17 +30,11 @@ impl From<Device> for DeviceDto {
             name: device.name,
             device_os: device.device_os,
             status: device.status,
-            registered_at: device
-                .registered_at
-                .map(|naive| convert_naive_to_offset(naive)),
+            registered_at: device.registered_at,
             created_by: device.created_by,
-            created_at: device
-                .created_at
-                .map(|naive| convert_naive_to_offset(naive)),
+            created_at: device.created_at,
             modified_by: device.modified_by,
-            modified_at: device
-                .modified_at
-                .map(|naive| convert_naive_to_offset(naive)),
+            modified_at: device.modified_at,
         }
     }
 }
@@ -54,7 +46,7 @@ pub struct CreateDeviceDto {
     pub device_os: DeviceOS,
     pub status: DeviceStatus,
     #[serde(with = "crate::common::ts_format::option")]
-    pub registered_at: Option<OffsetDateTime>,
+    pub registered_at: Option<DateTime<Utc>>,
     pub modified_by: String,
 }
 
@@ -65,7 +57,7 @@ pub struct UpdateDeviceDto {
     pub device_os: Option<DeviceOS>,
     pub status: Option<DeviceStatus>,
     #[serde(with = "crate::common::ts_format::option")]
-    pub registered_at: Option<OffsetDateTime>,
+    pub registered_at: Option<DateTime<Utc>>,
     pub modified_by: String,
 }
 

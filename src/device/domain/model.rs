@@ -1,7 +1,7 @@
 //! Domain model definitions for device-related entities.
 //! This includes enums for device status and OS, as well as the core `Device` struct.
 
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{
     decode::Decode,
@@ -140,9 +140,9 @@ pub struct Device {
     pub name: String,
     pub device_os: DeviceOS,
     pub status: DeviceStatus,
-    pub registered_at: Option<NaiveDateTime>,
+    pub registered_at: Option<DateTime<Utc>>,
     pub created_by: Option<String>,
-    pub created_at: Option<NaiveDateTime>,
+    pub created_at: Option<DateTime<Utc>>,
     pub modified_by: Option<String>,
-    pub modified_at: Option<NaiveDateTime>,
+    pub modified_at: Option<DateTime<Utc>>,
 }

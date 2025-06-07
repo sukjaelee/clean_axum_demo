@@ -1,28 +1,30 @@
+use chrono::{DateTime, Utc};
 use serde::{self, Deserialize, Deserializer, Serializer};
-use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
-// OffsetDateTime
-pub fn serialize<S>(date: &OffsetDateTime, serializer: S) -> Result<S::Ok, S::Error>
+// DateTime<Utc>
+pub fn serialize<S>(date: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    let s = date.format(&Rfc3339).map_err(serde::ser::Error::custom)?;
+    let s = date.to_rfc3339();
     serializer.serialize_str(&s)
 }
 
 #[allow(dead_code)]
-pub fn deserialize<'de, D>(deserializer: D) -> Result<OffsetDateTime, D::Error>
+pub fn deserialize<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
 where
     D: Deserializer<'de>,
 {
     let s = String::deserialize(deserializer)?;
-    OffsetDateTime::parse(&s, &Rfc3339).map_err(serde::de::Error::custom)
+    Ok(DateTime::parse_from_rfc3339(&s)
+        .map_err(serde::de::Error::custom)?
+        .with_timezone(&Utc))
 }
 
-// support for Option<OffsetDateTime>
+// support for Option<DateTime<Utc>>
 pub mod option {
     use super::*;
-    pub fn serialize<S>(date: &Option<OffsetDateTime>, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn serialize<S>(date: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -32,15 +34,15 @@ pub mod option {
         }
     }
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<OffsetDateTime>, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<DateTime<Utc>>, D::Error>
     where
         D: Deserializer<'de>,
     {
         let opt = Option::<String>::deserialize(deserializer)?;
         match opt {
-            Some(s) => OffsetDateTime::parse(&s, &Rfc3339)
-                .map(Some)
-                .map_err(serde::de::Error::custom),
+            Some(s) => DateTime::parse_from_rfc3339(&s)
+                .map_err(serde::de::Error::custom)
+                .map(|dt| dt.with_timezone(&Utc).into()),
             None => Ok(None),
         }
     }

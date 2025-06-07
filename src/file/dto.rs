@@ -1,8 +1,6 @@
-use crate::common::date_util::convert_naive_to_offset;
-
 use super::domain::model::{FileType, UploadedFile};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
 use utoipa::ToSchema;
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -40,10 +38,10 @@ pub struct UploadedFileDto {
     pub file_type: FileType,
     pub created_by: Option<String>,
     #[serde(with = "crate::common::ts_format")]
-    pub created_at: OffsetDateTime,
+    pub created_at: DateTime<Utc>,
     pub modified_by: Option<String>,
     #[serde(with = "crate::common::ts_format")]
-    pub modified_at: OffsetDateTime,
+    pub modified_at: DateTime<Utc>,
 }
 
 impl From<UploadedFile> for UploadedFileDto {
@@ -59,9 +57,9 @@ impl From<UploadedFile> for UploadedFileDto {
             file_size: file.file_size,
             file_type: file.file_type,
             created_by: file.created_by,
-            created_at: convert_naive_to_offset(file.created_at),
+            created_at: file.created_at,
             modified_by: file.modified_by,
-            modified_at: convert_naive_to_offset(file.modified_at),
+            modified_at: file.modified_at,
         }
     }
 }

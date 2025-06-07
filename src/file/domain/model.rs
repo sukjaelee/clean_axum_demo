@@ -2,7 +2,7 @@
 //! This includes the `FileType` enum and `UploadedFile` struct,
 //! used to represent file metadata in the business logic layer.
 
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{
     decode::Decode,
@@ -85,7 +85,7 @@ pub struct UploadedFile {
     pub file_size: i64,
     pub file_type: FileType,
     pub created_by: Option<String>,
-    pub created_at: NaiveDateTime,
+    pub created_at: DateTime<Utc>,
     pub modified_by: Option<String>,
-    pub modified_at: NaiveDateTime,
+    pub modified_at: DateTime<Utc>,
 }

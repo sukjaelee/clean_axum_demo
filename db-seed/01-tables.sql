@@ -10,9 +10,9 @@ CREATE TABLE users (
     username     VARCHAR(64)    NOT NULL UNIQUE,
     email        VARCHAR(128)   NOT NULL,
     created_by   VARCHAR(36),
-    created_at   TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at   TIMESTAMPTZ    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     modified_by  VARCHAR(36),
-    modified_at  TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
+    modified_at  TIMESTAMPTZ    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Separate index for email lookup
@@ -28,11 +28,11 @@ CREATE TABLE devices (
     name         VARCHAR(128)   NOT NULL,
     status       VARCHAR(32)    NOT NULL,
     device_os    VARCHAR(16)    NOT NULL,
-    registered_at TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    registered_at TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by   VARCHAR(36),
-    created_at   TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at   TIMESTAMPTZ    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     modified_by  VARCHAR(36),
-    modified_at  TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_at  TIMESTAMPTZ    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     
     -- enforce unique (user_id, name)
     UNIQUE (user_id, name),
@@ -60,9 +60,9 @@ CREATE TABLE uploaded_files (
     file_type         VARCHAR(16)  NOT NULL,
 
     created_by        VARCHAR(36),
-    created_at        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at        TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     modified_by       VARCHAR(36),
-    modified_at       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_at       TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     -- foreign key → users.id
     FOREIGN KEY (user_id) REFERENCES users(id)
@@ -78,8 +78,8 @@ CREATE TABLE uploaded_files (
 CREATE TABLE user_auth (
     user_id       VARCHAR(36)  PRIMARY KEY,
     password_hash VARCHAR(255) NOT NULL,
-    created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    modified_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at    TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_at   TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     -- FK to users.id
     FOREIGN KEY (user_id) REFERENCES users(id)
