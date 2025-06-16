@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use validator::Validate;
 
+use crate::common::multipart::FileDto;
+
 use super::domain::model::User;
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -53,6 +55,16 @@ pub struct CreateUserMultipartDto {
     #[allow(dead_code)]
     #[schema(value_type = String, format = "binary", example = "profile_picture.png")]
     pub profile_picture: Option<String>,
+}
+
+#[derive(Validate)]
+pub struct CreateUserMultipartParsedDto {
+    #[validate(length(max = 64, message = "Username cannot exceed 64 characters"))]
+    pub username: String,
+    #[validate(email(message = "Invalid email format"))]
+    pub email: String,
+    pub modified_by: String,
+    pub profile_picture: Option<FileDto>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Validate)]

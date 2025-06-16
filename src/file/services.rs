@@ -5,9 +5,7 @@ use super::{
 };
 use crate::common::{config::Config, error::AppError};
 
-use regex::Regex;
-
-use sqlx::{Postgres, PgPool, Transaction};
+use sqlx::{PgPool, Postgres, Transaction};
 use std::path::Path as FilePath;
 use std::sync::Arc;
 
@@ -48,12 +46,6 @@ impl FileServiceTrait for FileService {
         tx: &mut Transaction<'_, Postgres>,
         upload_file: &UpdateFile,
     ) -> Result<Option<UploadedFileDto>, AppError> {
-        FileService::validate_file_upload(
-            &self.config,
-            &upload_file.data,
-            &upload_file.original_filename,
-        )?;
-
         let (unique_filename, file_relative_path, file_path) =
             self.build_file_path(&upload_file.original_filename);
 
@@ -204,39 +196,6 @@ impl FileService {
         candidate
     }
 
-    /// Performs validation checks on file size, name, and extension.
-    pub fn validate_file_upload(
-        config: &Config,
-        data: &[u8],
-        original_filename: &str,
-    ) -> Result<(), AppError> {
-        if data.len() > config.asset_max_size {
-            tracing::error!(
-                "File size exceeds the maximum limit of {}.",
-                config.asset_max_size
-            );
-            return Err(AppError::FileSizeExceeded);
-        }
-
-        if original_filename.contains("..") || original_filename.contains("/") {
-            tracing::error!("Invalid file name: {}", original_filename);
-            return Err(AppError::InvalidFileName);
-        }
-
-        let pattern = format!(r"(?i)^.*\.({})$", config.asset_allowed_extensions);
-        let re = Regex::new(&pattern).map_err(|err| {
-            tracing::error!("Error compiling regex: {}", err);
-            AppError::InternalError
-        })?;
-
-        if !re.is_match(original_filename) {
-            tracing::error!("Unsupported file extension: {}", original_filename);
-            return Err(AppError::UnsupportedFileExtension);
-        }
-
-        Ok(())
-    }
-
     /// Constructs a unique filename, relative path, and absolute disk path for the upload.
     fn build_file_path(&self, original_filename: &str) -> (String, String, std::path::PathBuf) {
         let base_dir = self.config.assets_private_path.as_str();
@@ -272,26 +231,5 @@ impl FileService {
         }
 
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::{common::config::Config, file::services::FileService};
-
-    #[tokio::test]
-    async fn test_validate_file_upload() {
-        let config = Config {
-            asset_max_size: 5 * 1024 * 1024, // 5MB
-            asset_allowed_extensions: "jpg|jpeg|png|gif".to_string(),
-            ..Default::default()
-        };
-
-        let valid_file = vec![0; 4 * 1024 * 1024]; // 4MB
-        let invalid_file = vec![0; 6 * 1024 * 1024]; // 6MB
-
-        assert!(FileService::validate_file_upload(&config, &valid_file, "test.jpg.sh").is_err());
-        assert!(FileService::validate_file_upload(&config, &valid_file, "test.jpg").is_ok());
-        assert!(FileService::validate_file_upload(&config, &invalid_file, "test.jpg").is_err());
     }
 }

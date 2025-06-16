@@ -1,8 +1,8 @@
-use std::collections::HashMap;
-
 use crate::{
-    app::FORBIDDEN_PATTERNS,
-    common::{app_state::AppState, dto::RestApiResponse, error::AppError, jwt::Claims},
+    common::{
+        app_state::AppState, dto::RestApiResponse, error::AppError, jwt::Claims,
+        multipart::parse_multipart_to_maps,
+    },
     file::dto::UpdateFile,
     user::dto::{CreateUserMultipartDto, UpdateUserDto, UserDto},
 };
@@ -71,46 +71,12 @@ pub async fn get_users(State(state): State<AppState>) -> Result<impl IntoRespons
 pub async fn create_user(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
-    mut multipart: Multipart,
+    multipart: Multipart,
 ) -> Result<impl IntoResponse, AppError> {
     let modified_by = claims.sub.clone().to_string();
 
-    // Variables to hold multipart fields.
-    let mut fields = HashMap::new();
-    let mut profile_picture_filename: Option<String> = None;
-    let mut profile_picture_content_type: Option<String> = None;
-    let mut profile_picture_data: Option<Vec<u8>> = None;
-
-    // Helper closure to map multipart errors to AppError.
-    let map_err_internal = |err| {
-        tracing::error!("Multipart error: {}", err);
-        AppError::InternalError
-    };
-
-    while let Some(field) = multipart.next_field().await.map_err(map_err_internal)? {
-        match field.name() {
-            Some("profile_picture") => {
-                profile_picture_filename = field.file_name().map(|s| s.to_string());
-                profile_picture_content_type = field.content_type().map(|mime| mime.to_string());
-                profile_picture_data =
-                    Some(field.bytes().await.map_err(map_err_internal)?.to_vec());
-            }
-            Some(name) => {
-                let name = name.to_string();
-                if FORBIDDEN_PATTERNS.iter().any(|re| re.is_match(&name)) {
-                    return Err(AppError::Forbidden);
-                }
-
-                let value = field.text().await.map_err(map_err_internal)?;
-                if FORBIDDEN_PATTERNS.iter().any(|re| re.is_match(&value)) {
-                    return Err(AppError::Forbidden);
-                }
-
-                fields.insert(name, value);
-            }
-            None => {}
-        }
-    }
+    let (mut fields, mut files) =
+        parse_multipart_to_maps(multipart, &state.config.asset_allowed_extensions_pattern).await?;
 
     // Validate required fields.
     let username = fields
@@ -136,17 +102,17 @@ pub async fn create_user(
     let mut upload_file = None;
 
     // If a profile picture was uploaded, handle it.
-    if let (Some(data), Some(filename), Some(content_type)) = (
-        profile_picture_data,
-        profile_picture_filename,
-        profile_picture_content_type,
-    ) {
+    if files.contains_key("profile_picture") {
+        let file = files
+            .remove("profile_picture")
+            .ok_or(AppError::ValidationError("Missing profile picture".into()))?;
+
         upload_file = Some(UpdateFile {
             user_id: None,
-            original_filename: filename,
-            data,
-            content_type: content_type.clone(),
-            modified_by: modified_by.clone(),
+            original_filename: file.original_filename,
+            data: file.data,
+            content_type: file.content_type,
+            modified_by: modified_by,
         });
     }
 

@@ -1,11 +1,11 @@
-use serde::Deserialize;
+use regex::Regex;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use std::env;
 use std::time::Duration;
 use tokio::time::sleep;
 
 /// Config is a struct that holds the configuration for the application.
-#[derive(Default, Clone, Debug, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct Config {
     pub database_url: String,
     pub database_max_connections: u32,
@@ -20,7 +20,7 @@ pub struct Config {
     pub assets_private_path: String,
     pub assets_private_url: String,
 
-    pub asset_allowed_extensions: String,
+    pub asset_allowed_extensions_pattern: Regex,
     pub asset_max_size: usize,
 }
 
@@ -30,6 +30,8 @@ pub struct Config {
 impl Config {
     pub fn from_env() -> Result<Self, env::VarError> {
         dotenvy::dotenv().ok();
+
+        let ext_val = env::var("ASSET_ALLOWED_EXTENSIONS")?;
 
         Ok(Self {
             database_url: env::var("DATABASE_URL")?,
@@ -50,8 +52,15 @@ impl Config {
             assets_private_path: env::var("ASSETS_PRIVATE_PATH")?,
             assets_private_url: env::var("ASSETS_PRIVATE_URL")?,
 
-            asset_allowed_extensions: env::var("ASSET_ALLOWED_EXTENSIONS")
-                .unwrap_or_else(|_| "jpg,jpeg,png,gif,webp".to_string()),
+            asset_allowed_extensions_pattern: Regex::new(&format!(r"(?i)^.*\.({})$", ext_val))
+                .unwrap_or_else(|_| {
+                    eprintln!(
+                        "Invalid ASSET_ALLOWED_EXTENSIONS regex pattern: {}",
+                        ext_val
+                    );
+                    Regex::new(r"(?i)^.*\.(jpg|jpeg|png|gif|webp)$").unwrap()
+                }),
+
             asset_max_size: env::var("ASSET_MAX_SIZE")
                 .map(|s| s.parse::<usize>().unwrap_or(50 * 1024 * 1024))?, // Default to 50MB
         })
