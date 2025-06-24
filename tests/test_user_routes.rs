@@ -2,7 +2,7 @@ use axum::http::{Method, StatusCode};
 
 use clean_axum_demo::{
     common::{dto::RestApiResponse, error::AppError},
-    user::dto::{CreateUserMultipartDto, SearchUserDto, UpdateUserDto, UserDto},
+    domains::user::dto::user_dto::{CreateUserMultipartDto, SearchUserDto, UpdateUserDto, UserDto},
 };
 
 mod test_helpers;

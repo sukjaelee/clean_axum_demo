@@ -23,21 +23,18 @@ use tower_http::{
 use utoipa::OpenApi;
 
 use crate::{
-    auth::routes::user_auth_routes,
     common::{
         app_state::AppState,
         error::{handle_error, AppError},
         jwt,
     },
-    device::routes::device_routes,
-    file::routes::file_routes,
-    user::routes::user_routes,
+    domains::{
+        auth::{user_auth_routes, UserAuthApiDoc},
+        device::{device_routes, DeviceApiDoc},
+        file::{file_routes, FileApiDoc},
+        user::{user_routes, UserApiDoc},
+    },
 };
-
-use crate::auth::routes::UserAuthApiDoc;
-use crate::device::routes::DeviceApiDoc;
-use crate::file::routes::FileApiDoc;
-use crate::user::routes::UserApiDoc;
 
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -156,21 +153,18 @@ pub async fn fallback() -> Result<impl IntoResponse, AppError> {
     Ok((StatusCode::NOT_FOUND, "Not Found"))
 }
 
+// Type alias for the boxed future returned by the request/response inspector middleware
+type InspectorFuture = std::pin::Pin<
+    Box<dyn std::future::Future<Output = Result<Response, (StatusCode, String)>> + Send>,
+>;
+
 /// Middleware that inspects request bodies and URL query strings, as well as response bodies, logging them for debugging, and rejects forbidden content.
 /// Intercepts HTTP requests and responses: buffers bodies and query strings, then logs their content.
 /// Returns a 403 Forbidden error if any forbidden patterns are detected in the request body or query string.
 /// Note: multipart/form-data requests bypass this middleware and must be validated within their handlers.
 fn make_request_response_inspecter(
     log_enabled: bool,
-) -> impl Fn(
-    Request<Body>,
-    Next,
-) -> std::pin::Pin<
-    Box<dyn std::future::Future<Output = Result<Response, (StatusCode, String)>> + Send>,
-> + Clone
-       + Send
-       + Sync
-       + 'static {
+) -> impl Fn(Request<Body>, Next) -> InspectorFuture + Clone + Send + Sync + 'static {
     move |req, next| {
         let fut = request_response_inspecter(req, next, log_enabled);
         Box::pin(fut)

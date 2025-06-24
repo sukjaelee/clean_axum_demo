@@ -1,20 +1,24 @@
+use std::sync::Arc;
+
 use sqlx::PgPool;
 
-use crate::auth::services::AuthService;
-use crate::common::app_state::AppState;
 use crate::common::config::Config;
-use crate::device::services::DeviceService;
-use crate::file::services::FileService;
-use crate::user::services::UserService;
+use crate::domains::auth::{AuthService, AuthServiceTrait};
+use crate::domains::device::{DeviceService, DeviceServiceTrait};
+use crate::domains::file::{FileService, FileServiceTrait};
+use crate::domains::user::UserServiceTrait;
+use crate::{common::app_state::AppState, domains::user::UserService};
 
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 /// Constructs and wires all application services and returns a configured AppState.
 pub fn build_app_state(pool: PgPool, config: Config) -> AppState {
-    let auth_service = AuthService::create_service(pool.clone());
-    let file_service = FileService::create_service(config.clone(), pool.clone());
-    let user_service = UserService::create_service(pool.clone(), file_service.clone());
-    let device_service = DeviceService::create_service(pool.clone());
+    let auth_service: Arc<dyn AuthServiceTrait> = AuthService::create_service(pool.clone());
+    let file_service: Arc<dyn FileServiceTrait> =
+        FileService::create_service(config.clone(), pool.clone());
+    let user_service: Arc<dyn UserServiceTrait> =
+        UserService::create_service(pool.clone(), Arc::clone(&file_service));
+    let device_service: Arc<dyn DeviceServiceTrait> = DeviceService::create_service(pool.clone());
 
     AppState::new(
         config,

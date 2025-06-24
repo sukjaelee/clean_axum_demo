@@ -1,18 +1,20 @@
-# Rust Axum Clean Demo
+# Clean Axum Demo
 
-A modern, clean-architecture Rust API server template built with Axum and SQLx. It incorporates domain-driven design, repository patterns, JWT authentication, file uploads, Swagger documentation, and comprehensive testing.
+A minimalist, domain-driven Rust API server template using Axum and SQLx.  
+Designed for clarity, scalability, and rapid development.
 
 ---
 
-## ✨ Features
+## 🔧 Features
 
-- Clean architecture with layered domain separation
-- Modular Axum HTTP server with route handlers
-- SQLx with compile-time checked queries
-- JWT authentication and protected routes
-- Asynchronous file upload and secure asset serving
-- Swagger UI documentation powered by Utoipa
-- OpenTelemetry distributed tracing and metrics instrumentation
+- **Clean Architecture**: Clear separation of domain, infrastructure, and API layers
+- **Modular Domains**: Self-contained features (auth, user, device, file)
+- **SQLx Integration**: Compile-time-checked queries in offline mode
+- **JWT Auth**: Secure authentication and authorization
+- **File Uploads**: Asynchronous handling and secure asset serving
+- **OpenAPI Docs**: Swagger UI powered by Utoipa
+- **Observability**: OpenTelemetry tracing and metrics
+- **Testing**: Unit and integration tests with `tokio::test` and `tower::ServiceExt`
 
 ---
 
@@ -20,52 +22,52 @@ A modern, clean-architecture Rust API server template built with Axum and SQLx. 
 
 Recommended layout:
 
-```
-├── src
-│   ├── <domain>/             # e.g., auth, user, device, file
-│   │   ├── mod.rs            # Module entry point
-│   │   ├── domain/           # Domain logic: models, traits
-│   │   │   ├── mod.rs
-│   │   │   ├── model.rs
-│   │   │   ├── repository.rs
-│   │   │   └── service.rs
-│   │   ├── handlers.rs       # Route handlers
-│   │   ├── routes.rs         # Route definitions
-│   │   ├── queries.rs        # SQLx query logic
-│   │   ├── dto.rs            # Data Transfer Objects
-│   │   └── services.rs       # Infrastructure-layer service implementations
-│
-│   ├── common/               # Shared components and utilities
-│   │   ├── mod.rs
-│   │   ├── app_state.rs      # AppState struct for dependency injection
-│   │   ├── bootstrap.rs      # Service initialization and AppState construction
-│   │   ├── config.rs         # Environment variable configuration loader
-│   │   ├── dto.rs            # Shared/global DTOs
-│   │   ├── error.rs          # AppError enum and error mappers
-│   │   ├── hash_util.rs      # Hashing utilities (e.g., bcrypt)
-│   │   ├── jwt.rs            # JWT encoding, decoding, and validation
-│   │   ├── opentelemetry.rs  # OpenTelemetry setup
-│   │   └── ts_format.rs      # Custom timestamp serialization formatting
-│
-│   ├── lib.rs                # Declares top-level modules like app, auth, user, etc.
-│   ├── app.rs                # Axum router and middleware setup
-│   ├── main.rs               # Application entry point
-│
-├── db-seed/                  # Database table definitions and seed data
-├── tests/                    # Integration and API tests
-│   ├── asset/                # Test file assets
-│   ├── test_auth_routes.rs
-│   ├── test_device_routes.rs
-│   ├── test_helpers.rs       # Shared setup and utilities for tests
-│   └── test_user_routes.rs
-├── .env                     # Environment variables for local development
-├── .env.test                # Environment overrides for test environment
-└── ERD.png                  # Database Entity Relationship Diagram
+```text
+├── src/
+│   ├── main.rs                         # Application entry point
+│   ├── app.rs                          # Router setup and middleware
+│   ├── lib.rs                          # Module declarations
+│   ├── common.rs
+│   ├── common/                         # Shared components and utilities
+│   │   ├── app_state.rs                # AppState struct for dependency injection
+│   │   ├── bootstrap.rs                # Service initialization and AppState construction
+│   │   ├── config.rs                   # Environment variable configuration loader
+│   │   ├── dto.rs                      # Shared/global DTOs
+│   │   ├── error.rs                    # AppError enum and error mappers
+│   │   ├── hash_util.rs                # Hashing utilities (e.g., bcrypt)
+│   │   ├── jwt.rs                      # JWT encoding, decoding, and validation
+│   │   ├── multipart.rs                # Multipart Helper
+│   │   ├── opentelemetry.rs            # OpenTelemetry setup
+│   │   └── ts_format.rs                # Custom timestamp serialization formatting
+
+│   ├── domains.rs                      # Feature modules declarations
+│   ├── domains/                        # Feature modules
+│   │   ├── <feature>/                  # e.g., auth, user, device, file
+│   │   │   ├── api/
+│   │   │   │   ├── handlers.rs         # Route handlers
+│   │   │   │   └── routes.rs           # Route definitions
+│   │   │   ├── domain/                 # Domain models, traits
+│   │   │   │   ├── model.rs
+│   │   │   │   ├── repository.rs
+│   │   │   │   └── service.rs
+│   │   │   ├── dto/                    # Data Transfer Objects
+│   │   │   │   └── <feature>_dto.rs
+│   │   │   └── infra/                  # Infrastructure-layer implementations
+│   │   │       ├── impl_repository.rs
+│   │   │       └── impl_service.rs
+│   │   ├── <feature>.rs                 # Module entry point
+
+├── tests/
+│   ├── asset/
+│   ├── test_helpers.rs                 # Shared setup and utilities for tests
+│   └── test_<domain>_routes.rs
+├── .env                                # Environment variables for local development
+├── .env.test                           # Environment overrides for test environment
 ```
 
-> When adding a new domain module, register it in:
->
-> - `src/lib.rs`
+When adding a new domain module, register it in:
+
+> - `src/domains.rs`
 > - `src/app.rs`
 > - `src/common/app_state.rs`
 > - `src/common/bootstrap.rs`
@@ -163,6 +165,17 @@ Open [http://localhost:8080/docs](http://localhost:8080/docs) in your browser fo
 
 ---
 
+## 💡 Architecture
+
+- **Domain**: Traits and models define core business logic.
+- **Infra**: Concrete implementations (SQLx repositories, services)
+- **API**: Axum handlers and route definitions
+- **DTOs**: Typed request/response contracts
+- **Bootstrap**: Wires dependencies into `AppState`
+
+1. Create `domains/<feature>/` with `api/`, `domain/`, `infra/`, `dto/`
+2. Register in `domains.rs`, `app.rs`, `common/app_state.rs`, `common/bootstrap.rs`
+
 ## 🧠 Domain-Driven Design & Architecture
 
 ### Domain Module
@@ -175,7 +188,7 @@ Open [http://localhost:8080/docs](http://localhost:8080/docs) in your browser fo
 
 ### Repository Layer (Sqlx)
 
-Each domain owns its own `repository.rs` and `queries.rs`.
+Each domain owns its own `repository.rs` and `impl_repository.rs`.
 
 `sqlx::query`
 
@@ -191,7 +204,7 @@ Each domain owns its own `repository.rs` and `queries.rs`.
 ### Use Case Isolation & Dependency Inversion
 
 - Domain service traits define business contracts.
-- Concrete implementations live in `services.rs`, constructed via factory methods.
+- Concrete implementations live in `impl_service.rs`, constructed via factory methods.
 - `bootstrap.rs` wires services and builds `AppState` for dependency injection.
 
 ### Interface Layer (Axum)
@@ -224,7 +237,7 @@ The database structure is illustrated in the Entity Relationship Diagram:
 
 ## 📚 API Documentation
 
-- Swagger UI is available at `/docs` (powered by Utoipa).
+- Swagger UI is available at `/docs` (powered by Utoipa). Open [http://localhost:8080/docs](http://localhost:8080/docs) in your browser for Swagger UI.
 - DTOs and endpoints are annotated for OpenAPI specification.
 
 ---

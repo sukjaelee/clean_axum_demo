@@ -1,16 +1,11 @@
 use axum::http::{Method, StatusCode};
 
-use clean_axum_demo::{
-    common::dto::RestApiResponse,
-    device::{
-        domain::model::{DeviceOS, DeviceStatus},
-        dto::{
-            CreateDeviceDto, DeviceDto, UpdateDeviceDto, UpdateDeviceDtoWithIdDto,
-            UpdateManyDevicesDto,
-        },
-    },
+use clean_axum_demo::common::dto::RestApiResponse;
+use clean_axum_demo::domains::device::dto::device_dto::{
+    CreateDeviceDto, DeviceDto, UpdateDeviceDto, UpdateDeviceDtoWithIdDto, UpdateManyDevicesDto,
 };
 
+use clean_axum_demo::domains::device::{DeviceOS, DeviceStatus};
 use uuid::Uuid;
 mod test_helpers;
 use test_helpers::{

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use crate::{
-    auth::domain::service::AuthServiceTrait, device::domain::service::DeviceServiceTrait,
-    file::domain::service::FileServiceTrait, user::domain::service::UserServiceTrait,
+use crate::domains::{
+    auth::AuthServiceTrait, device::DeviceServiceTrait, file::FileServiceTrait,
+    user::UserServiceTrait,
 };
 
 use super::config::Config;
