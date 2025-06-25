@@ -40,7 +40,7 @@ Recommended layout:
 │   │   ├── opentelemetry.rs            # OpenTelemetry setup
 │   │   └── ts_format.rs                # Custom timestamp serialization formatting
 
-│   ├── domains.rs                      # Feature modules declarations
+│   ├── domains.rs                      # Domain modules declarations
 │   ├── domains/                        # Feature modules
 │   │   ├── <feature>/                  # e.g., auth, user, device, file
 │   │   │   ├── api/
@@ -60,12 +60,12 @@ Recommended layout:
 ├── tests/
 │   ├── asset/
 │   ├── test_helpers.rs                 # Shared setup and utilities for tests
-│   └── test_<domain>_routes.rs
+│   └── test_<feature>_routes.rs
 ├── .env                                # Environment variables for local development
 ├── .env.test                           # Environment overrides for test environment
 ```
 
-When adding a new domain module, register it in:
+When adding a new feature module, register it in:
 
 > - `src/domains.rs`
 > - `src/app.rs`
@@ -178,17 +178,17 @@ Open [http://localhost:8080/docs](http://localhost:8080/docs) in your browser fo
 
 ## 🧠 Domain-Driven Design & Architecture
 
-### Domain Module
+### Domain Layer
 
 - `model.rs`: holds your core structs and enums that represent entities or value objects.
 - **Model Type Reference**: Conversions between Rust and PostgreSQL types.  
   [See SQLx Postgres types mapping](https://docs.rs/sqlx/latest/sqlx/postgres/types/index.html)
-- `repository.rs`: declares the trait(s) that encapsulate persistence operations for the domain (e.g., `UserRepository`).
-- `service.rs`: declares the trait(s) for domain service operations.
+- `repository.rs`: declares the trait(s) that encapsulate persistence operations for the feature (e.g., `UserRepository`).
+- `service.rs`: declares the trait(s) for feature service operations.
 
-### Repository Layer (Sqlx)
+### Infra Layer
 
-Each domain owns its own `repository.rs` and `impl_repository.rs`.
+Each feature owns its own `impl_repository.rs` and `impl_service.rs`
 
 `sqlx::query`
 
@@ -201,28 +201,28 @@ Each domain owns its own `repository.rs` and `impl_repository.rs`.
 - Automatic type inference: You list your Rust values after the SQL string, and SQLx figures out how to map them to the placeholder types ($1, $2, …).
 - Struct-level safety: If you use query_as!, it also confirms that the columns you select match the fields of your target struct.
 
+### API Layer
+
+- Route handlers accept DTOs, invoke feature logic, and return serialized responses.
+- Each feature owns its own `routes.rs` and `handlers.rs`.
+- Supports asynchronous multipart file uploads with validation.
+- Secure file serving validates user permissions and sanitizes file paths.
+
+### DTOs & Validation
+
+- Request and response DTOs reside in each feature's `dto.rs`.
+- Explicit mapping between DTOs and feature models.
+- Uses `serde` and optionally the [validator](https://docs.rs/validator) crate for input validation.
+
 ### Use Case Isolation & Dependency Inversion
 
 - Domain service traits define business contracts.
 - Concrete implementations live in `impl_service.rs`, constructed via factory methods.
 - `bootstrap.rs` wires services and builds `AppState` for dependency injection.
 
-### Interface Layer (Axum)
+## Domain Code Autogeneration From a “CREATE TABLE” Script
 
-- Route handlers accept DTOs, invoke domain logic, and return serialized responses.
-- Each domain owns its own `routes.rs` and `handlers.rs`.
-- Supports asynchronous multipart file uploads with validation.
-- Secure file serving validates user permissions and sanitizes file paths.
-
-### DTOs & Validation
-
-- Request and response DTOs reside in each domain's `dto.rs`.
-- Explicit mapping between DTOs and domain models.
-- Uses `serde` and optionally the [validator](https://docs.rs/validator) crate for input validation.
-
-### Domain Code Autogeneration From a “CREATE TABLE” Script
-
-- [domain_codegen](https://github.com/sukjaelee/domain_codegen) project provides a code generator specifically designed for the clean_axum_demo project. It automatically generates the domain layer structure under gen/, which you can copy and customize as needed.
+- [domain_codegen](https://github.com/sukjaelee/domain_codegen) project provides a code generator specifically designed for the clean_axum_demo project. It automatically generates the feature layer structure under gen/, which you can copy and customize as needed.
 
 ---
 
@@ -265,7 +265,7 @@ See definitions in `common/dto.rs`.
 
 ## 🧪 Testing
 
-- Unit tests cover domain logic and core components.
+- Unit tests cover feature logic and core components.
 - Integration tests exercise HTTP endpoints and database interactions.
 - Use `#[tokio::test]` and `tower::ServiceExt` for HTTP simulation.
 - Test assets and helpers are located in the `tests/` directory.
