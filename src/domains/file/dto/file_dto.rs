@@ -4,8 +4,15 @@ use utoipa::ToSchema;
 
 use crate::domains::file::domain::model::{FileType, UploadedFile};
 
+#[derive(PartialEq, Debug, Serialize, Deserialize, ToSchema)]
+pub struct FileDto {
+    pub content_type: String,
+    pub original_filename: String,
+    pub data: Vec<u8>,
+}
+
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct CreateFile {
+pub struct CreateFileDto {
     pub user_id: Option<String>,
     pub file_name: String,
     pub origin_file_name: String,
@@ -18,10 +25,8 @@ pub struct CreateFile {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct UpdateFile {
-    pub content_type: String,
-    pub original_filename: String,
-    pub data: Vec<u8>,
+pub struct UploadFileDto {
+    pub file: FileDto,
     pub user_id: Option<String>,
     pub modified_by: String,
 }

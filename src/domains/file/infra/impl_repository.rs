@@ -1,6 +1,6 @@
 use crate::domains::file::{
     domain::{model::UploadedFile, repository::FileRepository},
-    dto::file_dto::CreateFile,
+    dto::file_dto::CreateFileDto,
 };
 use async_trait::async_trait;
 use sqlx::{PgPool, Postgres, Transaction};
@@ -23,7 +23,7 @@ impl FileRepository for FileRepo {
     async fn create_file(
         &self,
         tx: &mut Transaction<'_, Postgres>,
-        file: CreateFile,
+        file: CreateFileDto,
     ) -> Result<UploadedFile, sqlx::Error> {
         let id = Uuid::new_v4().to_string();
 

@@ -2,7 +2,7 @@ use crate::common::{config::Config, error::AppError};
 use crate::domains::file::domain::model::FileType;
 use crate::domains::file::domain::repository::FileRepository;
 use crate::domains::file::domain::service::FileServiceTrait;
-use crate::domains::file::dto::file_dto::{CreateFile, UpdateFile, UploadedFileDto};
+use crate::domains::file::dto::file_dto::{CreateFileDto, UploadFileDto, UploadedFileDto};
 use crate::domains::file::infra::impl_repository::FileRepo;
 
 use sqlx::{PgPool, Postgres, Transaction};
@@ -39,28 +39,35 @@ impl FileServiceTrait for FileService {
     async fn process_profile_picture_upload(
         &self,
         tx: &mut Transaction<'_, Postgres>,
-        upload_file: &UpdateFile,
+        upload_file_dto: &UploadFileDto,
     ) -> Result<Option<UploadedFileDto>, AppError> {
-        let (unique_filename, file_relative_path, file_path) =
-            self.build_file_path(&upload_file.original_filename);
+        let file_dto = &upload_file_dto.file;
 
-        self.write_file_to_disk(&file_path, &upload_file.data)?;
+        if file_dto.data.is_empty() {
+            tracing::error!("File data is empty.");
+            return Err(AppError::InvalidFileData);
+        }
+
+        let (unique_filename, file_relative_path, file_path) =
+            self.build_file_path(&file_dto.original_filename);
+
+        self.write_file_to_disk(&file_path, &file_dto.data)?;
 
         let file_url = format!(
             "{}/profile/{}",
             self.config.assets_private_url, &unique_filename
         );
 
-        let create_file_dto = CreateFile {
-            user_id: upload_file.user_id.clone(),
+        let create_file_dto = CreateFileDto {
+            user_id: upload_file_dto.user_id.clone(),
             file_name: unique_filename,
-            origin_file_name: upload_file.original_filename.clone(),
+            origin_file_name: file_dto.original_filename.clone(),
             file_relative_path,
             file_url,
-            content_type: upload_file.content_type.clone(),
-            file_size: upload_file.data.len() as u32,
+            content_type: file_dto.content_type.clone(),
+            file_size: file_dto.data.len() as u32,
             file_type: FileType::ProfilePicture,
-            modified_by: upload_file.modified_by.clone(),
+            modified_by: upload_file_dto.modified_by.clone(),
         };
 
         self.repo
@@ -71,7 +78,7 @@ impl FileServiceTrait for FileService {
                 AppError::DatabaseError(err)
             })?;
 
-        if let Some(user_id) = &upload_file.user_id {
+        if let Some(user_id) = &upload_file_dto.user_id {
             self.get_file_by_user(user_id.clone()).await
         } else {
             Err(AppError::ValidationError("User ID is missing".into()))

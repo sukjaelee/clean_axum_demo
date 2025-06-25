@@ -1,10 +1,10 @@
 use crate::{
     common::{
         app_state::AppState, dto::RestApiResponse, error::AppError, jwt::Claims,
-        multipart::parse_multipart_to_maps,
+        multipart_helper::parse_multipart_to_maps,
     },
     domains::{
-        file::dto::file_dto::UpdateFile,
+        file::dto::file_dto::UploadFileDto,
         user::dto::user_dto::{CreateUserMultipartDto, SearchUserDto, UpdateUserDto, UserDto},
     },
 };
@@ -99,26 +99,26 @@ pub async fn create_user(
         .validate()
         .map_err(|err| AppError::ValidationError(format!("Invalid input: {}", err)))?;
 
-    let mut upload_file = None;
+    let mut upload_file_dto = None;
 
     // If a profile picture was uploaded, handle it.
     if files.contains_key("profile_picture") {
-        let file = files
+        let profile_files = files
             .remove("profile_picture")
             .ok_or(AppError::ValidationError("Missing profile picture".into()))?;
 
-        upload_file = Some(UpdateFile {
-            user_id: None,
-            original_filename: file.original_filename,
-            data: file.data,
-            content_type: file.content_type,
-            modified_by,
-        });
+        if let Some(file) = profile_files.into_iter().next() {
+            upload_file_dto = Some(UploadFileDto {
+                file,
+                user_id: None,
+                modified_by,
+            });
+        }
     }
 
     let user = state
         .user_service
-        .create_user(create_user, upload_file.as_mut())
+        .create_user(create_user, upload_file_dto.as_mut())
         .await?;
 
     Ok(RestApiResponse::success(user))

@@ -3,7 +3,7 @@
 
 use crate::{
     common::error::AppError,
-    domains::file::dto::file_dto::UpdateFile,
+    domains::file::dto::file_dto::UploadFileDto,
     domains::user::dto::user_dto::{CreateUserMultipartDto, SearchUserDto, UpdateUserDto, UserDto},
 };
 
@@ -38,7 +38,7 @@ pub trait UserServiceTrait: Send + Sync {
     async fn create_user(
         &self,
         create_user: CreateUserMultipartDto,
-        upload_file: Option<&mut UpdateFile>,
+        upload_file_dto: Option<&mut UploadFileDto>,
     ) -> Result<UserDto, AppError>;
 
     /// Updates an existing user with the given payload.

@@ -8,7 +8,7 @@ use sqlx::{PgPool, Postgres, Transaction};
 
 use crate::{
     common::{config::Config, error::AppError},
-    domains::file::dto::file_dto::{UpdateFile, UploadedFileDto},
+    domains::file::dto::file_dto::{UploadFileDto, UploadedFileDto},
 };
 
 #[async_trait]
@@ -26,7 +26,7 @@ pub trait FileServiceTrait: Send + Sync {
     async fn process_profile_picture_upload(
         &self,
         tx: &mut Transaction<'_, Postgres>,
-        upload_file: &UpdateFile,
+        upload_file_dto: &UploadFileDto,
     ) -> Result<Option<UploadedFileDto>, AppError>;
 
     /// Retrieves file metadata by its file ID.

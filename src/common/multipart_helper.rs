@@ -1,10 +1,6 @@
-use crate::{app::FORBIDDEN_PATTERNS, common::error::AppError};
+use std::collections::HashMap;
 
-pub struct FileDto {
-    pub content_type: String,
-    pub original_filename: String,
-    pub data: Vec<u8>,
-}
+use crate::{app::FORBIDDEN_PATTERNS, common::error::AppError, domains::file::FileDto};
 
 const APPLICATION_OCTET_STREAM: &str = "application/octet-stream";
 
@@ -14,12 +10,12 @@ pub async fn parse_multipart_to_maps(
 ) -> Result<
     (
         std::collections::HashMap<String, String>,
-        std::collections::HashMap<String, FileDto>,
+        std::collections::HashMap<String, Vec<FileDto>>,
     ),
     AppError,
 > {
-    let mut fields = std::collections::HashMap::new();
-    let mut files = std::collections::HashMap::new();
+    let mut fields: HashMap<String, String> = std::collections::HashMap::new();
+    let mut files: HashMap<String, Vec<FileDto>> = std::collections::HashMap::new();
 
     // Helper closure to map multipart errors to AppError.
     let map_err_internal = |err| {
@@ -65,14 +61,11 @@ pub async fn parse_multipart_to_maps(
                 .to_string();
             let data = field.bytes().await.map_err(map_err_internal)?.to_vec();
 
-            files.insert(
-                name,
-                FileDto {
-                    content_type,
-                    original_filename,
-                    data,
-                },
-            );
+            files.entry(name).or_insert_with(Vec::new).push(FileDto {
+                content_type,
+                original_filename,
+                data,
+            });
         } else {
             let text = field.text().await.map_err(map_err_internal)?;
 

@@ -32,6 +32,9 @@ pub enum AppError {
     Forbidden,
 
     /// Used for file-related errors
+    #[error("File data is empty")]
+    InvalidFileData,
+
     #[error("File size exceeded")]
     FileSizeExceeded,
 
@@ -64,7 +67,8 @@ impl IntoResponse for AppError {
             AppError::NotFound(_) => StatusCode::NOT_FOUND,
             AppError::InternalError => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Forbidden => StatusCode::FORBIDDEN,
-            AppError::FileSizeExceeded
+            AppError::InvalidFileData
+            | AppError::FileSizeExceeded
             | AppError::InvalidFileName
             | AppError::UnsupportedFileExtension => StatusCode::BAD_REQUEST,
             AppError::WrongCredentials => StatusCode::UNAUTHORIZED,

@@ -1,7 +1,7 @@
 //! This module defines the `FileRepository` trait, which provides
 //! an abstraction over database operations for managing uploaded files.
 
-use crate::domains::file::dto::file_dto::CreateFile;
+use crate::domains::file::dto::file_dto::CreateFileDto;
 
 use super::model::UploadedFile;
 
@@ -16,7 +16,7 @@ pub trait FileRepository {
     async fn create_file(
         &self,
         tx: &mut Transaction<'_, Postgres>,
-        file: CreateFile,
+        file: CreateFileDto,
     ) -> Result<UploadedFile, sqlx::Error>;
 
     /// Finds a file record by its unique identifier.

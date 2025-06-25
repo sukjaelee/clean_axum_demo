@@ -1,7 +1,7 @@
 use crate::{
     common::error::AppError,
     domains::{
-        file::{dto::file_dto::UpdateFile, FileServiceTrait},
+        file::{dto::file_dto::UploadFileDto, FileServiceTrait},
         user::{
             domain::{repository::UserRepository, service::UserServiceTrait},
             dto::user_dto::{CreateUserMultipartDto, SearchUserDto, UpdateUserDto, UserDto},
@@ -86,11 +86,11 @@ impl UserServiceTrait for UserService {
         }
     }
     /// Creates a new user.
-    /// Takes a CreateUserMultipartDto object and an optional UpdateFile object.
+    /// Takes a CreateUserMultipartDto object and an optional UploadFileDto object.
     async fn create_user(
         &self,
         create_user: CreateUserMultipartDto,
-        upload_file: Option<&mut UpdateFile>,
+        upload_file_dto: Option<&mut UploadFileDto>,
     ) -> Result<UserDto, AppError> {
         let mut tx = self.pool.begin().await?;
 
@@ -103,10 +103,10 @@ impl UserServiceTrait for UserService {
             }
         };
 
-        if let Some(uploaded_file) = upload_file {
-            uploaded_file.user_id = Some(user_id.clone());
+        if let Some(upload_file_dto) = upload_file_dto {
+            upload_file_dto.user_id = Some(user_id.clone());
             self.file_service
-                .process_profile_picture_upload(&mut tx, uploaded_file)
+                .process_profile_picture_upload(&mut tx, upload_file_dto)
                 .await?;
         }
 
