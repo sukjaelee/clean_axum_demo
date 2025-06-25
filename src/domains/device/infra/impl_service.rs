@@ -23,7 +23,7 @@ pub struct DeviceService {
 /// Implementation of the DeviceService struct
 #[async_trait]
 impl DeviceServiceTrait for DeviceService {
-    /// Creates a new user authentication record in the database.
+    /// constructor for the service.
     fn create_service(pool: PgPool) -> Arc<dyn DeviceServiceTrait> {
         Arc::new(Self {
             pool,

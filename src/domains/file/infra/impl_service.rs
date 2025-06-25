@@ -24,7 +24,7 @@ pub struct FileService {
 /// Implementation of the FileService struct
 #[async_trait]
 impl FileServiceTrait for FileService {
-    /// Creates a new instance of FileService.
+    /// constructor for the service.
     fn create_service(config: Config, pool: PgPool) -> Arc<dyn FileServiceTrait> {
         Arc::new(Self {
             config,

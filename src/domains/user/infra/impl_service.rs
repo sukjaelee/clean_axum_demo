@@ -25,7 +25,7 @@ pub struct UserService {
 
 #[async_trait]
 impl UserServiceTrait for UserService {
-    /// Creates a new instance of UserService.
+    /// constructor for the service.
     fn create_service(
         pool: PgPool,
         file_service: Arc<dyn FileServiceTrait>,

@@ -26,7 +26,7 @@ pub struct AuthService {
 /// Implementation of the AuthService
 #[async_trait::async_trait]
 impl AuthServiceTrait for AuthService {
-    /// Creates a new user authentication record in the database.
+    /// constructor for the service.
     fn create_service(pool: PgPool) -> Arc<dyn AuthServiceTrait> {
         Arc::new(Self {
             pool,
