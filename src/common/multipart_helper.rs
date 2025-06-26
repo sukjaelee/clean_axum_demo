@@ -61,7 +61,7 @@ pub async fn parse_multipart_to_maps(
                 .to_string();
             let data = field.bytes().await.map_err(map_err_internal)?.to_vec();
 
-            files.entry(name).or_insert_with(Vec::new).push(FileDto {
+            files.entry(name).or_default().push(FileDto {
                 content_type,
                 original_filename,
                 data,
