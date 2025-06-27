@@ -36,7 +36,7 @@ Recommended layout:
 │   │   ├── error.rs                    # AppError enum and error mappers
 │   │   ├── hash_util.rs                # Hashing utilities (e.g., bcrypt)
 │   │   ├── jwt.rs                      # JWT encoding, decoding, and validation
-│   │   ├── multipart.rs                # Multipart Helper
+│   │   ├── multipart_helper.rs         # Multipart Helper
 │   │   ├── opentelemetry.rs            # OpenTelemetry setup
 │   │   └── ts_format.rs                # Custom timestamp serialization formatting
 
@@ -226,12 +226,12 @@ Each feature owns its own `impl_repository.rs` and `impl_service.rs`
 
 ---
 
-## 🧱 Database Schema
+## 🧱 Demo Database Schema
 
 See the `db-seed/` directory for table definitions and sample data.  
-The database structure is illustrated in the Entity Relationship Diagram:
+The database structure is illustrated in the ERD:
 
-![ER Diagram](./ERD.png)
+![ERD](./ERD.png)
 
 ---
 
