@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT ua.user_id, ua.password_hash\n              FROM user_auth ua\n              JOIN users u ON ua.user_id = u.id\n              WHERE u.username = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "password_hash",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "12d3a6398cb4bb51a4e30afb31b6591f1f15f239a92cc6638cf953f527e7bdd2"
+}

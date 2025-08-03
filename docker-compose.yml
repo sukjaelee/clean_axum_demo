@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:15
-    container_name: axum_postgres
+    container_name: clean_axum_app_postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: testuser
@@ -24,5 +24,5 @@ services:
     env_file:
       - .env      
     environment:
-      - DATABASE_URL=postgres://testuser:pass@axum_postgres:5432/testdb
+      - DATABASE_URL=postgres://testuser:pass@clean_axum_app_postgres:5432/testdb
 

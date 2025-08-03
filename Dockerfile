@@ -8,7 +8,10 @@ RUN apt-get update && apt-get install -y libssl-dev pkg-config curl
 # Copy sources
 COPY . .
 
-# offline mode
+# Copy SQLx query metadata for offline mode
+COPY .sqlx .sqlx
+
+# sqlx offline mode
 ENV SQLX_OFFLINE=true
 
 # Build in release mode

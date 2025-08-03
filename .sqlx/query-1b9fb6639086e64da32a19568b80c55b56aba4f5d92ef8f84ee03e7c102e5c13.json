@@ -1,0 +1,94 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT id, user_id, file_name, origin_file_name, file_relative_path, file_url,\n                content_type, file_size, file_type, created_by,\n                created_at,\n                modified_by,\n                modified_at\n            FROM uploaded_files \n            WHERE user_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "file_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "origin_file_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "file_relative_path",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "file_url",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "content_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "file_size",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "file_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_by",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "modified_by",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 12,
+        "name": "modified_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "1b9fb6639086e64da32a19568b80c55b56aba4f5d92ef8f84ee03e7c102e5c13"
+}
