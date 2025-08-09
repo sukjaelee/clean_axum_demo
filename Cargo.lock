@@ -306,6 +306,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
+ "simple_dto_mapper_derive",
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
@@ -2050,6 +2051,17 @@ dependencies = [
  "num-traits",
  "thiserror 2.0.12",
  "time",
+]
+
+[[package]]
+name = "simple_dto_mapper_derive"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "69421cb2767a8105e3c23125dd3319dc02d01cbf5d5db1561a4efb0a42fe8e9b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

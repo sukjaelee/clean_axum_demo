@@ -1,11 +1,13 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use simple_dto_mapper_derive::DtoFrom;
 use utoipa::ToSchema;
 use validator::Validate;
 
 use crate::domains::user::domain::model::User;
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, DtoFrom)]
+#[dto(from = User)]
 pub struct UserDto {
     pub id: String,
     pub username: String,
@@ -18,22 +20,6 @@ pub struct UserDto {
     pub modified_at: Option<DateTime<Utc>>,
     pub file_id: Option<String>,
     pub origin_file_name: Option<String>,
-}
-
-impl From<User> for UserDto {
-    fn from(user: User) -> Self {
-        Self {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            created_by: user.created_by,
-            created_at: user.created_at,
-            modified_by: user.modified_by,
-            modified_at: user.modified_at,
-            file_id: user.file_id,
-            origin_file_name: user.origin_file_name,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]

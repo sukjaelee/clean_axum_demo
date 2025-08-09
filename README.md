@@ -214,6 +214,14 @@ Each feature owns its own `impl_repository.rs` and `impl_service.rs`
 - Explicit mapping between DTOs and feature models.
 - Uses `serde` and optionally the [validator](https://docs.rs/validator) crate for input validation.
 
+### Automatic DTO Model Mapping
+
+This project uses the [`simple_dto_mapper_derive::DtoFrom`](https://docs.rs/simple_dto_mapper_derive/) derive macro
+to automatically generate `From` implementations for mapping between domain models and Data Transfer Objects (DTOs).
+It reduces boilerplate by mapping fields with matching names and types, while allowing customization through attributes
+for field renaming, type conversion, or transformation functions. This ensures consistent and maintainable
+conversion logic between internal domain structures and API-facing DTOs.
+
 ### Use Case Isolation & Dependency Inversion
 
 - Domain service traits define business contracts.
@@ -356,3 +364,4 @@ Contributions are welcome! Feel free to open issues, suggest improvements, or su
 - [Utoipa (OpenAPI)](https://docs.rs/utoipa)
 - [Tokio](https://tokio.rs/)
 - [Validator (crate)](https://docs.rs/validator)
+- [simple_dto_mapper_derive](https://docs.rs/simple_dto_mapper_derive/)

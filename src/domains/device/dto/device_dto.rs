@@ -1,11 +1,12 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-
+use simple_dto_mapper_derive::DtoFrom;
 use utoipa::ToSchema;
 
 use crate::domains::device::domain::model::{Device, DeviceOS, DeviceStatus};
 
-#[derive(PartialEq, Debug, Deserialize, Serialize, ToSchema)]
+#[derive(PartialEq, Debug, Deserialize, Serialize, ToSchema, DtoFrom)]
+#[dto(from = Device)]
 pub struct DeviceDto {
     pub id: String,
     pub user_id: String,
@@ -20,23 +21,6 @@ pub struct DeviceDto {
     pub modified_by: Option<String>,
     #[serde(with = "crate::common::ts_format::option")]
     pub modified_at: Option<DateTime<Utc>>,
-}
-
-impl From<Device> for DeviceDto {
-    fn from(device: Device) -> Self {
-        Self {
-            id: device.id,
-            user_id: device.user_id,
-            name: device.name,
-            device_os: device.device_os,
-            status: device.status,
-            registered_at: device.registered_at,
-            created_by: device.created_by,
-            created_at: device.created_at,
-            modified_by: device.modified_by,
-            modified_at: device.modified_at,
-        }
-    }
 }
 
 #[derive(PartialEq, Debug, Deserialize, serde::Serialize, ToSchema)]

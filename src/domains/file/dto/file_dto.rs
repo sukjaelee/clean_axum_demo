@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use simple_dto_mapper_derive::DtoFrom;
 use utoipa::ToSchema;
 
 use crate::domains::file::domain::model::{FileType, UploadedFile};
@@ -31,7 +32,8 @@ pub struct UploadFileDto {
     pub modified_by: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, DtoFrom)]
+#[dto(from = UploadedFile)]
 pub struct UploadedFileDto {
     pub id: String,
     pub user_id: String,
@@ -48,24 +50,4 @@ pub struct UploadedFileDto {
     pub modified_by: Option<String>,
     #[serde(with = "crate::common::ts_format")]
     pub modified_at: DateTime<Utc>,
-}
-
-impl From<UploadedFile> for UploadedFileDto {
-    fn from(file: UploadedFile) -> Self {
-        Self {
-            id: file.id,
-            user_id: file.user_id,
-            file_name: file.file_name,
-            origin_file_name: file.origin_file_name,
-            file_relative_path: file.file_relative_path,
-            file_url: file.file_url,
-            content_type: file.content_type,
-            file_size: file.file_size,
-            file_type: file.file_type,
-            created_by: file.created_by,
-            created_at: file.created_at,
-            modified_by: file.modified_by,
-            modified_at: file.modified_at,
-        }
-    }
 }
